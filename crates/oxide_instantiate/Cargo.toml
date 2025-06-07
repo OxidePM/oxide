@@ -1,0 +1,17 @@
+[package]
+name = "oxide_instantiate"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+oxide_core = { path = "../oxide_core" }
+oxide_store = { path = "../oxide_store" }
+tokio = { version = "1.44.2", features = ["io-util", "macros", "rt-multi-thread"] }
+toml = "0.8.22"
+
+[dev-dependencies]
+oxide_pkgs = { path = "../oxide_pkgs" }
+
+[[example]]
+name = "instantiate"
