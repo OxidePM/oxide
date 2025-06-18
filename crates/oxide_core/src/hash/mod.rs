@@ -1,14 +1,7 @@
-use crate::Cow;
 use base64::{engine::GeneralPurpose, prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use serde::{
     de::{self, Visitor},
     Deserialize, Serialize,
-};
-use sqlx::{
-    encode::IsNull,
-    error::BoxDynError,
-    sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef},
-    Decode, Sqlite, Type,
 };
 use std::fmt::Display;
 
@@ -122,31 +115,5 @@ impl TryFrom<&str> for Hash {
         parse!("sha256:", Hash::Sha256);
         parse!("sha512:", Hash::Sha512);
         Err(ParseHashError)
-    }
-}
-
-impl Type<Sqlite> for Hash {
-    fn type_info() -> SqliteTypeInfo {
-        <&str as Type<Sqlite>>::type_info()
-    }
-}
-
-impl<'r> sqlx::Encode<'r, Sqlite> for Hash {
-    fn encode_by_ref(&self, args: &mut Vec<SqliteArgumentValue<'r>>) -> Result<IsNull, BoxDynError>
-    where
-        Self: Sized,
-    {
-        args.push(SqliteArgumentValue::Text(Cow::Owned(
-            self.base64_with_algo(),
-        )));
-        Ok(IsNull::No)
-    }
-}
-
-impl<'r> sqlx::Decode<'r, Sqlite> for Hash {
-    fn decode(value: SqliteValueRef<'r>) -> Result<Self, BoxDynError> {
-        let value = <&str as Decode<Sqlite>>::decode(value)?;
-        // should be safe to unwrap
-        Ok(Hash::try_from(value).unwrap())
     }
 }

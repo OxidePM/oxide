@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-oxide_build = { path = "../oxide_build" }
 oxide_daemon = { path = "../oxide_daemon" }
 oxide_instantiate = { path = "../oxide_instantiate" }
 oxide_pkgs = { path = "../oxide_pkgs" }

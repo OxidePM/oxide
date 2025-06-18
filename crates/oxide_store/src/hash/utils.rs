@@ -1,7 +1,7 @@
 use oxide_core::{hash::Hash, store::StorePath};
 use sha2::{Digest, Sha512};
 
-pub fn make_path(h: Hash, name: &str) -> StorePath {
+pub fn make_path(h: &Hash, name: &str) -> StorePath {
     let mut hasher = Sha512::new();
     hasher.update(format!("{}:{}", h, name));
     let hash = hasher.finalize();

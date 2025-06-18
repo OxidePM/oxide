@@ -1,14 +1,15 @@
-use oxide_core::{hash::HashAlgo, store::HashPart, store::StorePath};
+use crate::types::Realisation;
+use oxide_core::{
+    hash::HashAlgo,
+    store::{HashPart, StorePath},
+    types::{EqClass, Out},
+};
 use std::collections::HashMap;
 
 pub struct EqRefs {
-    pub eq_class: StorePath,
-    pub refs: Vec<EqRef>,
-}
-
-pub struct EqRef {
-    pub path: StorePath,
-    pub eq_class: StorePath,
+    pub eq_class: EqClass,
+    pub out: Out,
+    pub refs: Vec<Realisation>,
 }
 
 pub struct Opt {

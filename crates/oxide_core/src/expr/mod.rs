@@ -1,5 +1,5 @@
 use crate::drv::DrvPath;
-use crate::Cow;
+use crate::types::Cow;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]

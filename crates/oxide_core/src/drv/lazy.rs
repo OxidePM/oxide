@@ -1,6 +1,6 @@
 use super::{Drv, IntoDrv};
 use crate::drv::DrvPath;
-use crate::Cow;
+use crate::types::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::fmt::Debug;
 use std::rc::Rc;

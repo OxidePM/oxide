@@ -15,7 +15,7 @@ impl IntoDrv for Hello {
             .input(
                 "src",
                 self.fetchurl.fetch(
-                    "testurl",
+                    "https://fake.url.com/test2/testurl-1.0",
                     hash!("sha256:abcdefghabcdefghabcdefghabcdefghabcdefghabc"),
                 ),
             )
@@ -24,6 +24,16 @@ impl IntoDrv for Hello {
                 vec![
                     local_file!("patches/abcd.patch"),
                     local_file!("patches/efgh.patch"),
+                ],
+            )
+            .input(
+                // TODO: this is ugly how do we simplify the interface
+                // I do not want to call into every time
+                "usrs",
+                vec![
+                    "alice".into(),
+                    "bob".into(),
+                    vec!["eve".into(), "john \"doe\"".into()].into(),
                 ],
             )
             .build()

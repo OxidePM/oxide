@@ -1,6 +1,8 @@
 pub mod api;
+pub mod build;
 pub mod hash;
-pub mod models;
 pub mod os;
+pub mod scan;
 pub mod stores;
+pub mod types;
 pub mod utils;

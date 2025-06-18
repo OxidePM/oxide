@@ -1,5 +1,5 @@
 [package]
-name = "oxide_build"
+name = "oxide_cli"
 version = "0.1.0"
 edition = "2024"
 

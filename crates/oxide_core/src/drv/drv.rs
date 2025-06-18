@@ -1,8 +1,8 @@
 use crate::expr::Expr;
 use crate::hash::Hash;
 use crate::system::System;
+use crate::types::Cow;
 use crate::utils::current_system;
-use crate::Cow;
 use std::collections::HashMap;
 
 pub const DRV_EXT: &'static str = ".drv";
@@ -109,7 +109,7 @@ impl DrvBuilder {
             fixed_hash: self.fixed_hash,
             system: self.system.unwrap_or(current_system()),
             inputs: self.inputs,
-            builder: self.builder.unwrap_or(Expr::Str("".into())),
+            builder: self.builder.expect("builder must be provided"),
             args: self.args,
         }
     }

@@ -1,5 +1,5 @@
 use crate::drv::{LazyDrv, DEFAULT_OUT};
-use crate::Cow;
+use crate::types::Cow;
 
 #[derive(Clone, Debug)]
 pub struct DrvPath {
@@ -12,7 +12,7 @@ impl DrvPath {
     pub fn new(drv: &LazyDrv) -> Self {
         Self {
             drv: LazyDrv::clone(&drv),
-            out: Cow::from(DEFAULT_OUT),
+            out: Cow::Borrowed(DEFAULT_OUT),
             suff: None,
         }
     }
