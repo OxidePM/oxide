@@ -1,6 +1,6 @@
 use crate::{api::Store, os::sandbox::prepare_sandbox, utils::tempfile::tempdir_in};
-use anyhow::Result;
-use oxide_core::{drv::StoreDrv, utils::base_name};
+use anyhow::{bail, Result};
+use oxide_core::drv::StoreDrv;
 use std::{collections::HashMap, ffi::CString, ptr};
 
 pub const SANDBOX_BUILD_DIR: &str = "/build";
@@ -68,7 +68,7 @@ fn strings_to_charptr(strs: Vec<String>) -> Result<(Vec<CString>, Vec<*const lib
 
 fn run_child(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
     let mut args = Vec::new();
-    args.push(base_name(&drv.builder).to_string());
+    args.push(drv.builder.to_string());
     for arg in drv.args.iter() {
         args.push(arg.clone());
     }
@@ -81,12 +81,17 @@ fn run_child(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
 }
 
 fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<()> {
-    let (_, args) = strings_to_charptr(args)?;
-    let (_, envs) = strings_to_charptr(envs)?;
+    // do not remove _args and _envs otherwise they might get dropped
+    // and the pointers will point to dirty memory
+    let (_args, args) = strings_to_charptr(args)?;
+    let (_envs, envs) = strings_to_charptr(envs)?;
     let builder = CString::new(builder)?;
     let builder = builder.as_ptr() as *const libc::c_char;
     unsafe {
-        libc::execve(builder, args.as_ptr(), envs.as_ptr());
+        let code = libc::execve(builder, args.as_ptr(), envs.as_ptr());
+        if code == -1 {
+            libc::exit(1);
+        }
     }
     Ok(())
 }
@@ -94,11 +99,14 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
 unsafe fn run_process(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
     let pid = unsafe { libc::fork() };
     if pid == 0 {
-        run_child(&drv, envs)?;
+        run_child(&drv, envs)
+    } else if pid == -1 {
+        bail!("unable to fork process");
+    } else {
+        let mut status = 0 as libc::c_int;
+        unsafe {
+            libc::waitpid(pid, &mut status, 0);
+        }
+        Ok(())
     }
-    let mut status = 0 as libc::c_int;
-    unsafe {
-        libc::waitpid(pid, &mut status, 0);
-    }
-    Ok(())
 }

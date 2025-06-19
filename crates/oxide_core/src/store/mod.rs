@@ -41,7 +41,7 @@ impl StorePath {
     }
 
     pub fn hash_part(&self) -> &str {
-        &self.0[..=HASH_PART_LEN]
+        &self.0[..HASH_PART_LEN]
     }
 
     pub fn to_hash_part(&self) -> HashPart {

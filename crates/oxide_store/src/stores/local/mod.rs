@@ -8,6 +8,7 @@ use crate::types::{Realisation, StoreObj};
 use crate::utils::tempfile::is_temp;
 use crate::utils::{add_lock_ext, is_valid_name};
 use anyhow::{bail, Result};
+use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
 use sqlx::migrate::Migrator;
@@ -66,8 +67,7 @@ impl Store for LocalStore {
         let hash = hash(&p, opt.algo, &opt.rewrites, opt.self_hash.as_ref()).await?;
         let path = make_path(&hash, &opt.name);
         if fix || !self.valid(&path).await? {
-            // TODO: better logging
-            println!("add to store: {} {}", opt.name, path.to_string());
+            info!("add to store: {}", path);
             let full_path = Self::store_path(&path);
             let lock_file = add_lock_ext(&full_path);
             let lock = PathLock::lock(lock_file, LockMode::Write)?;
@@ -104,14 +104,11 @@ impl Store for LocalStore {
     // this is not secure and it must be changed
     // maybe add a set of trusted distributors in config
     async fn trusted_paths(&self, eq_class: &EqClass, out: &Out) -> Result<Vec<StorePath>> {
-        _ = eq_class;
-        _ = out;
-        unimplemented!()
+        self.get_realisation_paths(eq_class, out).await
     }
 
     async fn realisation_refs(&self, realisation: &Realisation) -> Result<Vec<Realisation>> {
-        _ = realisation;
-        unimplemented!()
+        self.get_realisation_refs(realisation).await
     }
 }
 

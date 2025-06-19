@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use oxide_core::prelude::*;
 
 pub struct StdenvDrv;
@@ -13,6 +15,13 @@ pub struct StdenvOpt;
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct Stdenv(LazyDrv);
+
+impl Deref for Stdenv {
+    type Target = LazyDrv;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl IntoDrv for Stdenv {
     fn into_drv(self: Box<Self>) -> Drv {

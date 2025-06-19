@@ -12,7 +12,7 @@ impl IntoDrv for Perl {
             .out("bin")
             .builder("/bin/sh")
             .arg("-c")
-            .arg(r#"echo "---hello from perl---""#)
+            .arg(r#"echo "---hello from perl---" > $bin"#)
             .build()
     }
 }

@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::stdenv::Stdenv;
 use oxide_core::prelude::*;
 
@@ -10,7 +12,7 @@ impl IntoDrv for FetchUrlDrv {
         DrvBuilder::new("fetchurl-0.0.0")
             .builder("/bin/sh")
             .arg("-c")
-            .arg(r#"printf "%s\n" "---hello from fetchurl---" $name"#)
+            .arg(r#"printf "%s\n" "---hello from fetchurl---" $name > $out"#)
             .build()
     }
 }
@@ -18,6 +20,13 @@ impl IntoDrv for FetchUrlDrv {
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct FetchUrl(LazyDrv);
+
+impl Deref for FetchUrl {
+    type Target = LazyDrv;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl FetchUrl {
     pub fn new(fetchurl: FetchUrlDrv) -> Self {
@@ -50,7 +59,7 @@ impl IntoDrv for FetchUrlParam {
         DrvBuilder::new(name)
             .builder("/bin/sh")
             .arg("-c")
-            .arg(r#"printf "%s\n" "---hello from fetchurlparam---" $name $fetchurl $url $hash"#)
+            .arg(r#"printf "%s\n" "---hello from fetchurlparam---" $name $fetchurl $url $hash > $out"#)
             .fixed_hash(self.hash)
             .input("fetchurl", self.fetchurl)
             .input("url", self.url)

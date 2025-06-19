@@ -1,3 +1,8 @@
+use crate::{
+    api::{Opt, Store},
+    hash::utils::make_path,
+    utils::is_valid_name,
+};
 use anyhow::{bail, Result};
 use oxide_core::{
     drv::{Drv, DrvSerializer, LazyDrv, StoreDrv, DEFAULT_OUT, DRV_EXT},
@@ -6,11 +11,6 @@ use oxide_core::{
     store::StorePath,
     types::Out,
     utils::file_name,
-};
-use oxide_store::{
-    api::{Opt, Store},
-    hash::utils::make_path,
-    utils::is_valid_name,
 };
 use sha2::{Digest, Sha512};
 use std::{collections::BTreeMap, io::Cursor};
