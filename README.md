@@ -9,7 +9,9 @@ Short term goals:
 to allow this PM to run on embedded systems, and to not pin futures
 - [ ] Better error messages. With file and line number in debug mode
 - [ ] Add GC
-- [ ] Add Binary caches
+- [ ] Add deamon
 
 Long term goals:
 - [ ] Add support for multiple platforms. Right now only linux 
+- [ ] Add Binary caches
+

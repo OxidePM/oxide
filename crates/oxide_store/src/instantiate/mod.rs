@@ -183,7 +183,7 @@ where
 {
     {
         let hashes = DRV_HASHES.lock().unwrap();
-        if let Some(hash) = hashes.get(&p) {
+        if let Some(hash) = hashes.get(p) {
             return Ok(hash.clone());
         }
     }

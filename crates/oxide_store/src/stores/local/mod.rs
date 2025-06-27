@@ -1,18 +1,17 @@
 mod queries;
 
-use crate::api::{Opt, Store, CONFIG};
-use crate::hash::hash;
+use crate::api::{CONFIG, Opt, Store};
 use crate::hash::utils::make_path;
+use crate::hash::{hash_mod_rewrites, rewrite_self_hash, rewrite_store_path};
 use crate::os::lock::{LockMode, PathLock};
 use crate::types::{Realisation, StoreObj};
-use crate::utils::tempfile::is_temp;
 use crate::utils::{add_lock_ext, is_valid_name};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
-use sqlx::migrate::Migrator;
 use sqlx::SqlitePool;
+use sqlx::migrate::Migrator;
 use std::cell::LazyCell;
 use std::path::Path;
 use std::path::PathBuf;
@@ -54,7 +53,7 @@ impl LocalStore {
 }
 
 impl Store for LocalStore {
-    async fn add_to_store<P>(&self, p: P, opt: Opt) -> Result<StorePath>
+    async fn add_to_store<P>(&self, p: P, mut opt: Opt) -> Result<StorePath>
     where
         P: AsRef<Path>,
     {
@@ -64,7 +63,7 @@ impl Store for LocalStore {
         // TODO: add fix flag
         let fix = false;
 
-        let hash = hash(&p, opt.algo, &opt.rewrites, opt.self_hash.as_ref()).await?;
+        let hash = hash_mod_rewrites(&p, opt.algo, &opt.rewrites, opt.self_hash.as_ref()).await?;
         let path = make_path(&hash, &opt.name);
         if fix || !self.valid(&path).await? {
             info!("add to store: {}", path);
@@ -72,8 +71,14 @@ impl Store for LocalStore {
             let lock_file = add_lock_ext(&full_path);
             let lock = PathLock::lock(lock_file, LockMode::Write)?;
             if fix || !self.valid(&path).await? {
-                // TODO: rewrite and self_hash
                 self.copy_path(&p, &full_path).await?;
+                if let Some(self_hash) = opt.self_hash {
+                    rewrite_self_hash(&full_path, &self_hash, &path).await?;
+                    opt.rewrites.insert(self_hash, path.clone());
+                }
+                for r in opt.refs.iter_mut() {
+                    rewrite_store_path(r, &opt.rewrites);
+                }
                 self.register_store_obj(
                     StoreObj {
                         path: path.clone(),
@@ -85,7 +90,10 @@ impl Store for LocalStore {
             }
             lock.unlock();
         }
-        if let Some(eq_refs) = opt.eq_refs {
+        if let Some(mut eq_refs) = opt.eq_refs {
+            for eq_ref in eq_refs.refs.iter_mut() {
+                rewrite_store_path(&mut eq_ref.path, &opt.rewrites);
+            }
             self.register_realisation(
                 Realisation {
                     eq_class: eq_refs.eq_class,
@@ -120,13 +128,6 @@ impl LocalStore {
         path.as_ref().starts_with(&CONFIG.store_dir)
     }
 
-    fn is_temp<P>(path: P) -> bool
-    where
-        P: AsRef<Path>,
-    {
-        Self::is_store_path(&path) && is_temp(path)
-    }
-
     async fn copy_path<P, Q>(&self, src: P, dst: Q) -> Result<()>
     where
         P: AsRef<Path>,
@@ -140,7 +141,7 @@ impl LocalStore {
         }
         // if the path is in the store and it is temporary move it
         // otherwise copy it
-        if Self::is_temp(&src) {
+        if Self::is_store_path(&src) {
             fs::rename(&src, &dst).await?;
         } else {
             fs::copy(&src, &dst).await?;

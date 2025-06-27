@@ -59,7 +59,7 @@ impl IntoDrv for FetchUrlParam {
         DrvBuilder::new(name)
             .builder("/bin/sh")
             .arg("-c")
-            .arg(r#"printf "%s\n" "---hello from fetchurlparam---" $name $fetchurl $url $hash > $out"#)
+            .arg(r#"printf "%s\n" "---hello from fetchurlparam---" $name $url $hash > $out"#)
             .fixed_hash(self.hash)
             .input("fetchurl", self.fetchurl)
             .input("url", self.url)

@@ -3,7 +3,6 @@ pub mod build;
 pub mod hash;
 pub mod instantiate;
 pub mod os;
-pub mod scan;
 pub mod stores;
 pub mod types;
 pub mod utils;

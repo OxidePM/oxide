@@ -1,5 +1,5 @@
 use rand::distr::Alphanumeric;
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use tokio::fs;

@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap()
+        .expect("could not spawn tokio runtime")
         .block_on(async { cli().await })
 }
 

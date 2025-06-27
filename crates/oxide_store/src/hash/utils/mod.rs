@@ -1,3 +1,7 @@
+mod chunk;
+
+pub use chunk::*;
+
 use oxide_core::{hash::Hash, store::StorePath};
 use sha2::{Digest, Sha512};
 
@@ -16,4 +20,9 @@ pub fn random_hash() -> Hash {
 
 pub fn random_path(name: &str) -> StorePath {
     StorePath::new(random_hash(), &name)
+}
+
+#[inline]
+pub fn is_valid_hash_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_' || c == '-'
 }

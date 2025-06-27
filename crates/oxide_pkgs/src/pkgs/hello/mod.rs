@@ -16,7 +16,7 @@ impl IntoDrv for Hello {
                 "src",
                 self.fetchurl.fetch(
                     "https://fake.url.com/test2/testurl-1.0",
-                    hash!("sha256:abcdefghabcdefghabcdefghabcdefghabcdefghabc"),
+                    hash!("sha256:abcdefghabcdefghabcdefghabcdefghabcdefghijk"),
                 ),
             )
             .input(

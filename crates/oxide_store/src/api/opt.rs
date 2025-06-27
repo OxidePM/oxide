@@ -1,7 +1,7 @@
 use crate::types::Realisation;
 use oxide_core::{
     hash::HashAlgo,
-    store::{HashPart, StorePath},
+    store::StorePath,
     types::{EqClass, Out},
 };
 use std::collections::HashMap;
@@ -17,6 +17,6 @@ pub struct Opt {
     pub refs: Vec<StorePath>,
     pub eq_refs: Option<EqRefs>,
     pub name: String,
-    pub rewrites: HashMap<HashPart, HashPart>,
-    pub self_hash: Option<HashPart>,
+    pub rewrites: HashMap<StorePath, StorePath>,
+    pub self_hash: Option<StorePath>,
 }

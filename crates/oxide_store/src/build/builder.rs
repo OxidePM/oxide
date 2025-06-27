@@ -1,5 +1,5 @@
 use crate::{api::Store, os::sandbox::prepare_sandbox, utils::tempfile::tempdir_in};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use oxide_core::drv::StoreDrv;
 use std::{collections::HashMap, ffi::CString, ptr};
 

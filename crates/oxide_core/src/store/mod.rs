@@ -2,14 +2,13 @@ pub mod config;
 
 use crate::hash::Hash;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Deref};
+use std::{borrow::Borrow, fmt::Display, ops::Deref};
 
 /// LENGTH of the base64 encoded hash without algo
 pub const HASH_PART_LEN: usize = 64;
-/// The bytes of the base64 encoding of the Hash without algo
-pub type HashPart = Box<[u8; HASH_PART_LEN]>;
+pub type HashPart<'a> = &'a [u8; HASH_PART_LEN];
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 /// A path inside of the store
 // to be more general we could have used OsString
@@ -44,8 +43,38 @@ impl StorePath {
         &self.0[..HASH_PART_LEN]
     }
 
-    pub fn to_hash_part(&self) -> HashPart {
-        HashPart::new(self.hash_part().as_bytes().try_into().unwrap())
+    pub fn hash_bytes<'a>(&'a self) -> HashPart<'a> {
+        self.hash_part().as_bytes().try_into().unwrap()
+    }
+
+    pub fn rewrite_hash_part(&mut self, rewrite: &StorePath) {
+        (unsafe { self.0[..HASH_PART_LEN].as_bytes_mut() }).copy_from_slice(rewrite.hash_bytes());
+    }
+}
+
+impl Borrow<[u8; HASH_PART_LEN]> for StorePath {
+    fn borrow(&'_ self) -> HashPart<'_> {
+        self.hash_bytes()
+    }
+}
+
+impl<'a> PartialEq<HashPart<'a>> for StorePath {
+    fn eq(&self, other: &HashPart<'a>) -> bool {
+        self.hash_bytes() == *other
+    }
+}
+
+impl<'a> PartialEq<StorePath> for HashPart<'a> {
+    fn eq(&self, other: &StorePath) -> bool {
+        *self == other.hash_bytes()
+    }
+}
+
+impl std::hash::Hash for StorePath {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // only hash the hash part so that we do not have to pass HashPart eveywere
+        // and consequently also lifetimes
+        self.hash_bytes().hash(state)
     }
 }
 

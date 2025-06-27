@@ -2,8 +2,7 @@ mod builder;
 
 use crate::{
     api::{EqRefs, Opt, Store},
-    hash::utils::random_path,
-    scan::scan,
+    hash::{rewrite_str, scan_for_refs, utils::random_path},
     types::Realisation,
 };
 use anyhow::{bail, Result};
@@ -25,24 +24,28 @@ where
 {
     let mut drv = store.read_drv(&p).await?;
 
-    'b: {
-        // if all the eq_classes have a trusted path do not build again
-        let mut outputs = HashMap::new();
-        for (out, eq_class) in drv.eq_classes.iter() {
-            let trusted = store.trusted_paths(&eq_class, &out).await?;
-            if let Some(path) = trusted.into_iter().next() {
-                outputs.insert(out.clone(), path.clone());
-            } else {
-                break 'b;
-            }
-        }
-        return Ok(outputs);
-    }
+    // 'b: {
+    //     // if all the eq_classes have a trusted path do not build again
+    //     let mut outs = HashMap::new();
+    //     for (out, eq_class) in drv.eq_classes.iter() {
+    //         let trusted = store.trusted_paths(&eq_class, &out).await?;
+    //         if let Some(path) = trusted.into_iter().next() {
+    //             outs.insert(out.clone(), path.clone());
+    //         } else {
+    //             break 'b;
+    //         }
+    //     }
+    //     info!("building {}: trusted path found", p);
+    //     return Ok(outs);
+    // }
 
-    let mut inputs = HashSet::new();
     for (path, _) in drv.input_drvs.iter() {
         Box::pin(build(store, &path)).await?;
+    }
 
+    info!("building: {}", p);
+    let mut inputs = HashSet::new();
+    for (path, _) in drv.input_drvs.iter() {
         let input_drv = store.read_drv(&path).await?;
         for (out, eq_class) in input_drv.eq_classes {
             let trusted = store.trusted_paths(&eq_class, &out).await?;
@@ -62,35 +65,34 @@ where
     }
     let inputs = resolve(store, inputs).await?;
 
+    let mut mappings = HashMap::new();
     for r in inputs.iter() {
-        // TODO: replace this with the faster search algorithm used in oxide_store/hash/scan.rs
-        let e = r.eq_class.hash_part();
-        let p = r.path.hash_part();
-        drv.builder = drv.builder.replace(e, p);
-        drv.args = drv.args.into_iter().map(|arg| arg.replace(e, p)).collect();
-        drv.envs = drv
-            .envs
-            .into_iter()
-            .map(|(k, v)| (k, v.replace(e, p)))
-            .collect();
+        // how can we avoid this clone?
+        mappings.insert(r.eq_class.clone(), r.path.clone());
+    }
+    rewrite_str(&mut drv.builder, &mappings);
+    for arg in drv.args.iter_mut() {
+        rewrite_str(arg, &mappings);
+    }
+    for v in drv.envs.values_mut() {
+        rewrite_str(v, &mappings);
     }
 
-    drv.eq_classes = drv
+    let outputs = drv
         .eq_classes
-        .into_iter()
-        .map(|(out, eq_class)| (out, random_path(eq_class.name_part())))
-        .collect();
+        .iter()
+        .map(|(out, eq_class)| (out.clone(), random_path(eq_class.name_part())))
+        .collect::<HashMap<_, _>>();
     drv.envs.extend(
-        drv.eq_classes
+        outputs
             .iter()
-            .map(|(out, eq_class)| (out.to_string(), S::store_path(eq_class))),
+            .map(|(out, eq_class)| (out.clone(), S::store_path(eq_class))),
     );
 
-    info!("building: {}", p);
     run_builder::<S>(&drv).await?;
 
     // check that every output path was produced
-    for (out, eq_class) in drv.eq_classes.iter() {
+    for (out, eq_class) in outputs.iter() {
         let tmp_path = S::store_path(&eq_class);
         let tmp_path = Path::new(&tmp_path);
         if !tmp_path.exists() {
@@ -98,13 +100,22 @@ where
         }
     }
 
-    let refs = inputs.iter().map(|r| r.path.clone()).collect();
-    let mut outputs = HashMap::new();
+    let mut refs = inputs
+        .iter()
+        .map(|r| r.path.clone())
+        .collect::<HashSet<_>>();
+    refs.extend(drv.input_srcs);
+    let mut outs = HashMap::new();
     for (out, eq_class) in drv.eq_classes {
-        let tmp_path = S::store_path(&eq_class);
-        let refs = scan(&tmp_path, &refs).await?;
+        let self_hash = outputs[&out].clone();
+        let tmp_path = S::store_path(&self_hash);
+
+        let mut refs = refs.clone();
+        refs.insert(self_hash.clone());
+        let refs = scan_for_refs(&tmp_path, refs).await?;
+
         let name = eq_class.name_part().to_string();
-        let self_hash = Some(eq_class.to_hash_part());
+        let self_hash = Some(self_hash);
         let output = store
             .add_to_store(
                 &tmp_path,
@@ -122,9 +133,9 @@ where
                 },
             )
             .await?;
-        outputs.insert(out, output);
+        outs.insert(out, output);
     }
-    Ok(outputs)
+    Ok(outs)
 }
 
 fn selected_paths(

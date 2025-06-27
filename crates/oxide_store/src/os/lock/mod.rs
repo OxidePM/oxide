@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::{ffi::CString, mem, os::unix::ffi::OsStrExt, path::Path};
 
 pub enum LockMode {

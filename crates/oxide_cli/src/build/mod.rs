@@ -23,7 +23,9 @@ pub async fn build_cli(args: BuildArgs) -> Result<()> {
         }
     } else {
         // TODO: build derivations outside the pkgs collection
-        bail!("Derivations outside the pkgs collection are not yet supported. Preappend the path with oxide#pkg_name")
+        bail!(
+            "Derivations outside the pkgs collection are not yet supported. Preappend the path with oxide#pkg_name"
+        )
     }
 
     Ok(())

@@ -1,6 +1,6 @@
 use super::LocalStore;
 use crate::api::Store;
-use crate::types::{Realisation, StoreObj, ID};
+use crate::types::{ID, Realisation, StoreObj};
 use anyhow::Result;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
@@ -83,7 +83,7 @@ impl LocalStore {
             JOIN store_obj o ON r.obj = o.id
             WHERE r.eq_class = ? AND r.out = ? AND o.path = ?"#,
         )
-        .bind(&*realisation.eq_class)
+        .bind(Self::store_path(&realisation.eq_class))
         .bind(&realisation.out)
         .bind(Self::store_path(&realisation.path))
         .fetch_optional(&self.db)
@@ -97,7 +97,7 @@ impl LocalStore {
             (?, ?, (SELECT id FROM store_obj WHERE path = ?))
             RETURNING id"#,
         )
-        .bind(&*realisation.eq_class)
+        .bind(Self::store_path(&realisation.eq_class))
         .bind(&realisation.out)
         .bind(Self::store_path(&realisation.path))
         .fetch_one(&self.db)
@@ -114,7 +114,7 @@ impl LocalStore {
                 WHERE r.eq_class = ? AND r.out = ? AND o.path = ?
                 "#,
         )
-        .bind(&*realisation.eq_class)
+        .bind(Self::store_path(&realisation.eq_class))
         .bind(&realisation.out)
         .bind(Self::store_path(&realisation.path))
         .fetch_one(&self.db)
@@ -163,7 +163,7 @@ impl LocalStore {
             r#"
             SELECT r.eq_class, r.out, o.path
             FROM realisation r
-            JOIN realisation_ref ref ON ref.references = r.id
+            JOIN realisation_ref ref ON ref.reference = r.id
             JOIN store_obj o ON o.id = r.obj
             WHERE ref.referrer = ?
             "#,
@@ -183,7 +183,8 @@ impl LocalStore {
 
     fn path_to_store(path: String) -> StorePath {
         unsafe {
-            StorePath::from_string(path.strip_prefix(&Self::store_dir()).unwrap().to_string())
+            let strip = path.strip_prefix(&Self::store_dir()).unwrap();
+            StorePath::from_string(strip[1..].to_string())
         }
     }
 }
