@@ -28,10 +28,7 @@ impl ChunkReader {
         let tail_len = self.len - tail_start;
         self.buff.copy_within(tail_start..self.len, 0);
         // read the new data
-        let n = self
-            .file
-            .read(&mut self.buff[tail_len..tail_len + 1])
-            .await?;
+        let n = self.file.read(&mut self.buff[tail_len..]).await?;
         if n == 0 {
             return Ok(None);
         }

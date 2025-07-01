@@ -1,6 +1,6 @@
 use super::LocalStore;
 use crate::api::Store;
-use crate::types::{ID, Realisation, StoreObj};
+use crate::types::{Realisation, StoreObj, ID};
 use anyhow::Result;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};

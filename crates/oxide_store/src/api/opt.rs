@@ -4,7 +4,7 @@ use oxide_core::{
     store::StorePath,
     types::{EqClass, Out},
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct EqRefs {
     pub eq_class: EqClass,
@@ -14,7 +14,7 @@ pub struct EqRefs {
 
 pub struct Opt {
     pub algo: HashAlgo,
-    pub refs: Vec<StorePath>,
+    pub refs: HashSet<StorePath>,
     pub eq_refs: Option<EqRefs>,
     pub name: String,
     pub rewrites: HashMap<StorePath, StorePath>,

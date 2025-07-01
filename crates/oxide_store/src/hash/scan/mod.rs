@@ -7,7 +7,7 @@ use tokio::fs::{self, OpenOptions};
 
 use super::utils::is_valid_hash_char;
 
-pub async fn scan_for_refs<P>(path: P, mut refs: HashSet<StorePath>) -> Result<Vec<StorePath>>
+pub async fn scan_for_refs<P>(path: P, mut refs: HashSet<StorePath>) -> Result<HashSet<StorePath>>
 where
     P: AsRef<Path>,
 {
@@ -15,7 +15,7 @@ where
     if scan_root(path, &mut refs, &mut res).await?.is_none() {
         bail!("unknown file type");
     } else {
-        Ok(res.into_iter().collect())
+        Ok(res)
     }
 }
 

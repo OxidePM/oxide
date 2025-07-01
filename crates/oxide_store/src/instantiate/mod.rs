@@ -13,7 +13,10 @@ use oxide_core::{
     utils::file_name,
 };
 use sha2::{Digest, Sha512};
-use std::{collections::BTreeMap, io::Cursor};
+use std::{
+    collections::{BTreeMap, HashSet},
+    io::Cursor,
+};
 use std::{
     collections::{BTreeSet, HashMap},
     sync::{LazyLock, Mutex},
@@ -84,7 +87,7 @@ where
     let fixed_hash = drv.fixed_hash;
     let system = drv.system;
     let refs = {
-        let mut refs = Vec::new();
+        let mut refs = HashSet::new();
         refs.extend(input_drvs.iter().map(|(d, _)| d.clone()));
         refs.extend(input_srcs.iter().cloned());
         refs
@@ -266,7 +269,7 @@ where
                     &path,
                     Opt {
                         algo: HashAlgo::Sha512,
-                        refs: Vec::new(),
+                        refs: HashSet::new(),
                         eq_refs: None,
                         name: file_name(&path),
                         rewrites: HashMap::new(),

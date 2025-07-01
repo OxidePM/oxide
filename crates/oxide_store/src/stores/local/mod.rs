@@ -1,17 +1,17 @@
 mod queries;
 
-use crate::api::{CONFIG, Opt, Store};
+use crate::api::{Opt, Store, CONFIG};
 use crate::hash::utils::make_path;
 use crate::hash::{hash_mod_rewrites, rewrite_self_hash, rewrite_store_path};
 use crate::os::lock::{LockMode, PathLock};
 use crate::types::{Realisation, StoreObj};
 use crate::utils::{add_lock_ext, is_valid_name};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
-use sqlx::SqlitePool;
 use sqlx::migrate::Migrator;
+use sqlx::SqlitePool;
 use std::cell::LazyCell;
 use std::path::Path;
 use std::path::PathBuf;
@@ -76,15 +76,17 @@ impl Store for LocalStore {
                     rewrite_self_hash(&full_path, &self_hash, &path).await?;
                     opt.rewrites.insert(self_hash, path.clone());
                 }
-                for r in opt.refs.iter_mut() {
-                    rewrite_store_path(r, &opt.rewrites);
+                let mut refs = Vec::new();
+                for mut r in opt.refs {
+                    rewrite_store_path(&mut r, &opt.rewrites);
+                    refs.push(r);
                 }
                 self.register_store_obj(
                     StoreObj {
                         path: path.clone(),
                         hash,
                     },
-                    opt.refs,
+                    refs,
                 )
                 .await?;
             }

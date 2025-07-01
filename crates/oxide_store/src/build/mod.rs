@@ -24,20 +24,20 @@ where
 {
     let mut drv = store.read_drv(&p).await?;
 
-    // 'b: {
-    //     // if all the eq_classes have a trusted path do not build again
-    //     let mut outs = HashMap::new();
-    //     for (out, eq_class) in drv.eq_classes.iter() {
-    //         let trusted = store.trusted_paths(&eq_class, &out).await?;
-    //         if let Some(path) = trusted.into_iter().next() {
-    //             outs.insert(out.clone(), path.clone());
-    //         } else {
-    //             break 'b;
-    //         }
-    //     }
-    //     info!("building {}: trusted path found", p);
-    //     return Ok(outs);
-    // }
+    'b: {
+        // if all the eq_classes have a trusted path do not build again
+        let mut outs = HashMap::new();
+        for (out, eq_class) in drv.eq_classes.iter() {
+            let trusted = store.trusted_paths(&eq_class, &out).await?;
+            if let Some(path) = trusted.into_iter().next() {
+                outs.insert(out.clone(), path.clone());
+            } else {
+                break 'b;
+            }
+        }
+        info!("building {}: trusted path found", p);
+        return Ok(outs);
+    }
 
     for (path, _) in drv.input_drvs.iter() {
         Box::pin(build(store, &path)).await?;
@@ -114,6 +114,13 @@ where
         refs.insert(self_hash.clone());
         let refs = scan_for_refs(&tmp_path, refs).await?;
 
+        // TODO: what about self ref
+        let eq_refs = inputs
+            .iter()
+            .cloned()
+            .filter(|i| refs.contains(&i.path))
+            .collect();
+
         let name = eq_class.name_part().to_string();
         let self_hash = Some(self_hash);
         let output = store
@@ -125,7 +132,7 @@ where
                     eq_refs: Some(EqRefs {
                         eq_class,
                         out: out.clone(),
-                        refs: inputs.clone(),
+                        refs: eq_refs,
                     }),
                     name,
                     rewrites: HashMap::new(),

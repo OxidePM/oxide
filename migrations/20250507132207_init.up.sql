@@ -38,6 +38,7 @@ CREATE INDEX index_realisation_obj ON realisation(obj);
 CREATE TABLE realisation_ref (
     referrer  INTEGER NOT NULL,
     reference INTEGER NOT NULL,
+    PRIMARY KEY (referrer, reference),
     FOREIGN KEY (referrer) REFERENCES realisation(id) ON DELETE CASCADE,
     FOREIGN KEY (reference) REFERENCES realisation(id) ON DELETE RESTRICT
 );
