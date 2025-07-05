@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 oxide_core = { path = "../oxide_core" }
 oxide_store = { path = "../oxide_store" }
-oxide_pkgs = { path = "../oxide_pkgs" }
+oxide-pkgs = { git = "https://github.com/OxidePM/oxide-pkgs.git" }
 anyhow = "1.0.98"
 clap = { version = "4.5.40", features = ["derive"] }
 log = "0.4.27"
@@ -14,3 +14,4 @@ tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
 
 [lints]
 workspace = true
+

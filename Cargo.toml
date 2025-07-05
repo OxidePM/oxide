@@ -20,3 +20,10 @@ return_self_not_must_use = "allow"
 # TODO: do not allow the lints below
 declare_interior_mutable_const = "allow"
 borrow_interior_mutable_const = "allow"
+
+# This is used to not make rust complain that in oxide_cli 
+# oxide-pkgs is using a git dependency 
+# while this package is using a path dependency.
+# We could also use a third package to abstract oxide_core but that seems overkill
+[patch."https://github.com/OxidePM/oxide"]
+oxide_core = { path = "crates/oxide_core" }

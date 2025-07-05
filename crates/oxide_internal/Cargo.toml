@@ -5,6 +5,5 @@ edition = "2024"
 
 [dependencies]
 oxide_daemon = { path = "../oxide_daemon" }
-oxide_pkgs = { path = "../oxide_pkgs" }
 oxide_core = { path = "../oxide_core" }
 oxide_store = { path = "../oxide_store" }
