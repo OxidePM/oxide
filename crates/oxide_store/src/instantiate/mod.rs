@@ -3,9 +3,9 @@ use crate::{
     hash::utils::make_path,
     utils::is_valid_name,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use oxide_core::{
-    drv::{Drv, DrvSerializer, LazyDrv, StoreDrv, DEFAULT_OUT, DRV_EXT},
+    drv::{DEFAULT_OUT, DRV_EXT, Drv, DrvSerializer, LazyDrv, StoreDrv},
     expr::Expr,
     hash::{Hash, HashAlgo},
     store::StorePath,

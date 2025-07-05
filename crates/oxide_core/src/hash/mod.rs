@@ -1,7 +1,7 @@
-use base64::{engine::GeneralPurpose, prelude::BASE64_URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, engine::GeneralPurpose, prelude::BASE64_URL_SAFE_NO_PAD};
 use serde::{
-    de::{self, Visitor},
     Deserialize, Serialize,
+    de::{self, Visitor},
 };
 use std::fmt::Display;
 

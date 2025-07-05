@@ -1,17 +1,17 @@
 mod queries;
 
-use crate::api::{Opt, Store, CONFIG};
+use crate::api::{CONFIG, Opt, Store};
 use crate::hash::utils::make_path;
 use crate::hash::{hash_mod_rewrites, rewrite_self_hash, rewrite_store_path};
 use crate::os::lock::{LockMode, PathLock};
 use crate::types::{Realisation, StoreObj};
 use crate::utils::{add_lock_ext, is_valid_name};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
-use sqlx::migrate::Migrator;
 use sqlx::SqlitePool;
+use sqlx::migrate::Migrator;
 use std::cell::LazyCell;
 use std::path::Path;
 use std::path::PathBuf;

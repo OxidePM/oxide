@@ -1,7 +1,7 @@
 use super::utils::is_valid_hash_char;
 use crate::hash::{rewrite_hash, search_rewrites, utils::ChunkReader};
-use anyhow::{bail, Result};
-use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
+use anyhow::{Result, bail};
+use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
 use std::{collections::HashMap, io::SeekFrom, path::Path};
 use tokio::{
     fs::{self, OpenOptions},

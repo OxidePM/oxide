@@ -1,6 +1,6 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{bail, Result};
-use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
+use anyhow::{Result, bail};
+use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
 use std::collections::HashSet;
 use std::path::Path;
 use tokio::fs::{self, OpenOptions};

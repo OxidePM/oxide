@@ -5,7 +5,7 @@ use crate::{
     hash::{rewrite_str, scan_for_refs, utils::random_path},
     types::Realisation,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use builder::run_builder;
 use log::info;
 use oxide_core::{

@@ -1,4 +1,4 @@
-use crate::drv::{LazyDrv, DEFAULT_OUT};
+use crate::drv::{DEFAULT_OUT, LazyDrv};
 use crate::types::Cow;
 
 #[derive(Clone, Debug)]
