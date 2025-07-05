@@ -144,7 +144,7 @@ impl LocalStore {
             WHERE r.eq_class = ? AND r.out = ?
             "#,
         )
-        .bind(Self::store_path(&eq_class))
+        .bind(Self::store_path(eq_class))
         .bind(out)
         .fetch_all(&self.db)
         .await?;

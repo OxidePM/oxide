@@ -20,3 +20,6 @@ sqlx = { version = "0.8.5", features = [
 ], default-features = false }
 tokio = { version = "1.44.2", features = ["fs", "io-util"] }
 toml = "0.8.23"
+
+[lints]
+workspace = true

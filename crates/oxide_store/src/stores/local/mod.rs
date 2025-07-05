@@ -36,8 +36,13 @@ impl LocalStoreConfig {
     }
 }
 
-pub const LOCAL_STORE_CONFIG: LazyCell<LocalStoreConfig> =
-    LazyCell::new(|| LocalStoreConfig::new());
+impl Default for LocalStoreConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub const LOCAL_STORE_CONFIG: LazyCell<LocalStoreConfig> = LazyCell::new(LocalStoreConfig::new);
 
 pub struct LocalStore {
     db: SqlitePool,

@@ -50,8 +50,7 @@ impl<'de> Deserialize<'de> for StoreDrv {
             .into_iter()
             .map(|(k, v)| {
                 let base_name = to_base_name(k);
-                let path = unsafe { StorePath::from_string(base_name) };
-                (path, v)
+                (unsafe { StorePath::from_string(base_name) }, v)
             })
             .collect();
         let input_srcs = raw
@@ -59,8 +58,7 @@ impl<'de> Deserialize<'de> for StoreDrv {
             .into_iter()
             .map(|s| {
                 let base_name = to_base_name(s);
-                let path = unsafe { StorePath::from_string(base_name) };
-                path
+                unsafe { StorePath::from_string(base_name) }
             })
             .collect();
 

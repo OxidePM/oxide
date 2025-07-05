@@ -8,7 +8,7 @@ impl Log for Logger {
     }
 
     fn log(&self, record: &Record) {
-        if self.enabled(&record.metadata()) {
+        if self.enabled(record.metadata()) {
             if record.level() <= Level::Warn {
                 eprintln!("[{}] {}", record.level(), record.args());
             } else {

@@ -1,7 +1,7 @@
 mod args;
 pub use args::*;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use oxide_pkgs::top_level::all_packages::all_pkgs;
 use oxide_store::{api::Store, build::build, instantiate::instantiate, stores::local::LocalStore};
 

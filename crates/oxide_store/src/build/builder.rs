@@ -1,5 +1,5 @@
 use crate::{api::Store, os::sandbox::prepare_sandbox, utils::tempfile::tempdir_in};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use oxide_core::drv::StoreDrv;
 use std::{collections::HashMap, ffi::CString, ptr};
 
@@ -43,11 +43,11 @@ where
     let top_tmp_dir = tempdir_in(S::store_dir()).await?;
     // skip the slash :)
     let tmp_dir = top_tmp_dir.join(&SANDBOX_BUILD_DIR[1..]);
-    let envs = builder_envs::<S>(&drv);
-    prepare_sandbox(&tmp_dir)?;
+    let envs = builder_envs::<S>(drv);
+    prepare_sandbox(tmp_dir)?;
 
     unsafe {
-        run_process(&drv, envs)?;
+        run_process(drv, envs)?;
     }
 
     Ok(())
@@ -56,7 +56,7 @@ where
 fn strings_to_charptr(strs: Vec<String>) -> Result<(Vec<CString>, Vec<*const libc::c_char>)> {
     let cstrings = strs
         .into_iter()
-        .map(|s| CString::new(s))
+        .map(CString::new)
         .collect::<Result<Vec<CString>, _>>()?;
     let mut charptr = cstrings
         .iter()
@@ -99,7 +99,7 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
 unsafe fn run_process(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
     let pid = unsafe { libc::fork() };
     if pid == 0 {
-        run_child(&drv, envs)
+        run_child(drv, envs)
     } else if pid == -1 {
         bail!("unable to fork process");
     } else {

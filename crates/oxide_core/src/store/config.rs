@@ -1,8 +1,8 @@
 use std::env;
 
-pub const STORE_DIR: &'static str = "/var/lib/oxide/store";
-pub const LOG_DIR: &'static str = "/var/log/oxide";
-pub const STATE_DIR: &'static str = "/var/lib/oxide/var";
+pub const STORE_DIR: &str = "/var/lib/oxide/store";
+pub const LOG_DIR: &str = "/var/log/oxide";
+pub const STATE_DIR: &str = "/var/lib/oxide/var";
 
 pub struct Config {
     pub store_dir: String,
@@ -20,5 +20,11 @@ impl Config {
             log_dir,
             state_dir,
         }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
     }
 }

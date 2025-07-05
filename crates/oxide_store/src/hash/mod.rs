@@ -1,8 +1,8 @@
-mod hash;
+mod hashmod;
 mod rewrite;
 mod scan;
 
-pub use hash::*;
+pub use hashmod::*;
 pub use rewrite::*;
 pub use scan::*;
 

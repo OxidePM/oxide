@@ -88,7 +88,7 @@ where
     let system = drv.system;
     let refs = {
         let mut refs = HashSet::new();
-        refs.extend(input_drvs.iter().map(|(d, _)| d.clone()));
+        refs.extend(input_drvs.keys().cloned());
         refs.extend(input_srcs.iter().cloned());
         refs
     };
@@ -136,7 +136,7 @@ where
     d.envs.extend(
         d.eq_classes
             .iter()
-            .map(|(out, eq_class)| (out.clone(), S::store_path(&eq_class))),
+            .map(|(out, eq_class)| (out.clone(), S::store_path(eq_class))),
     );
     let p = store
         .add_to_store_buff(
@@ -173,7 +173,7 @@ where
 {
     Ok(toml::to_string_pretty(&DrvSerializer {
         full_path: S::store_path,
-        drv: &drv,
+        drv,
     })?)
 }
 
@@ -190,7 +190,7 @@ where
             return Ok(hash.clone());
         }
     }
-    let drv = Box::pin(store.read_drv(&p)).await?;
+    let drv = Box::pin(store.read_drv(p)).await?;
     let hash = Box::pin(hash_drv(store, drv)).await?;
     {
         let mut hashes = DRV_HASHES.lock().unwrap();

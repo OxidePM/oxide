@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use std::{ffi::CString, mem, os::unix::ffi::OsStrExt, path::Path};
 
 pub enum LockMode {
@@ -21,7 +21,7 @@ impl PathLock {
     {
         let p = p.as_ref();
         loop {
-            let (fd, path) = PathLock::open_lock(&p)?;
+            let (fd, path) = PathLock::open_lock(p)?;
             let mode = match mode {
                 LockMode::Read => libc::LOCK_SH,
                 LockMode::Write => libc::LOCK_EX,
@@ -54,7 +54,7 @@ impl PathLock {
             libc::open(
                 path.as_ptr(),
                 libc::O_CLOEXEC | libc::O_RDWR | libc::O_CREAT,
-                0666,
+                666,
             )
         };
         if fd == 0 {

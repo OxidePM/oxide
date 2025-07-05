@@ -68,6 +68,7 @@ where
 {
     let target = fs::read_link(path).await?;
     let buff = target.as_os_str().as_encoded_bytes();
+    #[allow(clippy::never_loop)]
     for _i in search_self_hash(buff, self_hash) {
         unimplemented!()
     }
@@ -87,7 +88,7 @@ where
 
     let mut reader = ChunkReader::new(reader);
     while let Some(mut chunk) = reader.next().await? {
-        for i in search_self_hash(&chunk.chunk(), self_hash) {
+        for i in search_self_hash(chunk.chunk(), self_hash) {
             let absolute_pos = chunk.chunk_offset() + i as u64;
             writer.seek(SeekFrom::Start(absolute_pos)).await?;
             writer.write_all(rewrite.hash_bytes()).await?;

@@ -156,7 +156,8 @@ where
 {
     let target = fs::read_link(path).await?;
     let buff = target.as_os_str().as_encoded_bytes();
-    for (_i, _hash) in search_rewrites(buff, &rewrites, self_hash) {
+    #[allow(clippy::never_loop)]
+    for (_i, _hash) in search_rewrites(buff, rewrites, self_hash) {
         unimplemented!()
     }
     Ok(H::digest(buff).to_vec())
@@ -164,7 +165,7 @@ where
 
 #[inline]
 pub fn zeroo_hash(buff: &mut [u8], i: usize) {
-    buff[i..i + HASH_PART_LEN].fill('a' as u8);
+    buff[i..i + HASH_PART_LEN].fill(0);
 }
 
 #[inline]
@@ -190,7 +191,7 @@ where
     let mut reader = ChunkReader::new(reader);
     let mut remaining = Vec::new();
     while let Some(mut chunk) = reader.next().await? {
-        for (i, hash) in search_rewrites(chunk.chunk(), &rewrites, self_hash) {
+        for (i, hash) in search_rewrites(chunk.chunk(), rewrites, self_hash) {
             let absolute_pos = chunk.chunk_offset() + i as u64;
             if let Some(rewrite) = rewrites.get(hash) {
                 rewrite_hash(chunk.chunk(), i, rewrite);

@@ -22,13 +22,13 @@ pub async fn build<S>(store: &S, p: &StorePath) -> Result<HashMap<Out, StorePath
 where
     S: Store,
 {
-    let mut drv = store.read_drv(&p).await?;
+    let mut drv = store.read_drv(p).await?;
 
     'b: {
         // if all the eq_classes have a trusted path do not build again
         let mut outs = HashMap::new();
         for (out, eq_class) in drv.eq_classes.iter() {
-            let trusted = store.trusted_paths(&eq_class, &out).await?;
+            let trusted = store.trusted_paths(eq_class, out).await?;
             if let Some(path) = trusted.into_iter().next() {
                 outs.insert(out.clone(), path.clone());
             } else {
@@ -40,13 +40,13 @@ where
     }
 
     for (path, _) in drv.input_drvs.iter() {
-        Box::pin(build(store, &path)).await?;
+        Box::pin(build(store, path)).await?;
     }
 
     info!("building: {}", p);
     let mut inputs = HashSet::new();
     for (path, _) in drv.input_drvs.iter() {
-        let input_drv = store.read_drv(&path).await?;
+        let input_drv = store.read_drv(path).await?;
         for (out, eq_class) in input_drv.eq_classes {
             let trusted = store.trusted_paths(&eq_class, &out).await?;
             for tp in trusted {
@@ -93,7 +93,7 @@ where
 
     // check that every output path was produced
     for (out, eq_class) in outputs.iter() {
-        let tmp_path = S::store_path(&eq_class);
+        let tmp_path = S::store_path(eq_class);
         let tmp_path = Path::new(&tmp_path);
         if !tmp_path.exists() {
             bail!("builder failed to produce output {}", out);
@@ -117,8 +117,8 @@ where
         // TODO: what about self ref
         let eq_refs = inputs
             .iter()
+            .filter(|&i| refs.contains(&i.path))
             .cloned()
-            .filter(|i| refs.contains(&i.path))
             .collect();
 
         let name = eq_class.name_part().to_string();
@@ -170,7 +170,7 @@ where
     _ = store;
     _ = selected;
     // TODO: rewrite
-    return Ok(r);
+    Ok(r)
 }
 
 async fn resolve<S>(store: &S, inputs: HashSet<Realisation>) -> Result<Vec<Realisation>>

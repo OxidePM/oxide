@@ -1,7 +1,7 @@
-use base64::{Engine, engine::GeneralPurpose, prelude::BASE64_URL_SAFE_NO_PAD};
+use base64::{engine::GeneralPurpose, prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use serde::{
-    Deserialize, Serialize,
     de::{self, Visitor},
+    Deserialize, Serialize,
 };
 use std::fmt::Display;
 
@@ -101,10 +101,10 @@ impl TryFrom<&str> for Hash {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         macro_rules! parse {
             ($prefix:literal, $hash:expr) => {
-                if value.starts_with($prefix) {
+                if let Some(v) = value.strip_prefix($prefix) {
                     return Ok($hash(
                         BASE64
-                            .decode(&value[$prefix.len()..])
+                            .decode(v)
                             .map_err(|_| ParseHashError)?
                             .try_into()
                             .map_err(|_| ParseHashError)?,
