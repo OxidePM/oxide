@@ -8,6 +8,7 @@ use std::{borrow::Borrow, fmt::Display, ops::Deref};
 pub const HASH_PART_LEN: usize = 64;
 pub type HashPart<'a> = &'a [u8; HASH_PART_LEN];
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 /// A path inside of the store
@@ -17,10 +18,10 @@ pub type HashPart<'a> = &'a [u8; HASH_PART_LEN];
 pub struct StorePath(String);
 
 impl StorePath {
-    pub fn new(hash: Hash, name: &str) -> Self {
+    pub fn new(hash: &Hash, name: &str) -> Self {
         let mut h = hash.base64();
         h.truncate(HASH_PART_LEN);
-        Self(format!("{}-{}", h, name))
+        Self(format!("{h}-{name}"))
     }
 
     /// marked as unsafe because it does not guarantee to generate a real store path
@@ -32,7 +33,7 @@ impl StorePath {
     /// marked as unsafe because it does not generate a real store path
     /// use wisely when generating fake store paths for instantiate
     pub unsafe fn empty() -> Self {
-        Self("".to_string())
+        Self(String::new())
     }
 
     pub fn name_part(&self) -> &str {
@@ -43,7 +44,7 @@ impl StorePath {
         &self.0[..HASH_PART_LEN]
     }
 
-    pub fn hash_bytes<'a>(&'a self) -> HashPart<'a> {
+    pub fn hash_bytes(&self) -> HashPart<'_> {
         self.hash_part().as_bytes().try_into().unwrap()
     }
 
@@ -58,13 +59,13 @@ impl Borrow<[u8; HASH_PART_LEN]> for StorePath {
     }
 }
 
-impl<'a> PartialEq<HashPart<'a>> for StorePath {
-    fn eq(&self, other: &HashPart<'a>) -> bool {
+impl PartialEq<HashPart<'_>> for StorePath {
+    fn eq(&self, other: &HashPart<'_>) -> bool {
         self.hash_bytes() == *other
     }
 }
 
-impl<'a> PartialEq<StorePath> for HashPart<'a> {
+impl PartialEq<StorePath> for HashPart<'_> {
     fn eq(&self, other: &StorePath) -> bool {
         *self == other.hash_bytes()
     }
@@ -74,7 +75,7 @@ impl std::hash::Hash for StorePath {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // only hash the hash part so that we do not have to pass HashPart eveywere
         // and consequently also lifetimes
-        self.hash_bytes().hash(state)
+        self.hash_bytes().hash(state);
     }
 }
 

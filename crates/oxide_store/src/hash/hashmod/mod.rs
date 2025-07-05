@@ -18,7 +18,7 @@ use super::utils::is_valid_hash_char;
 
 /// To not have to read the file system twice
 /// this function hashes and applies rewrites at the same time
-pub async fn hash_mod_rewrites<P>(
+pub(crate) async fn hash_mod_rewrites<P>(
     path: P,
     algo: HashAlgo,
     rewrites: &HashMap<StorePath, StorePath>,
@@ -86,10 +86,10 @@ where
     })
 }
 
-pub const DIR_PERMISSION: u64 = 100755;
-pub const FILE_PERMISSION: u64 = 100644;
-pub const EXEC_FILE_PERMISSION: u64 = 100644;
-pub const SYMLINK_PERMISSION: u64 = 100644;
+pub const DIR_PERMISSION: u64 = 100_755;
+pub const FILE_PERMISSION: u64 = 100_644;
+pub const EXEC_FILE_PERMISSION: u64 = 100_644;
+pub const SYMLINK_PERMISSION: u64 = 100_644;
 
 pub async fn file_type_to_permission(entry: DirEntry) -> Result<u64> {
     let metadata = entry.metadata().await?;
@@ -164,12 +164,12 @@ where
 }
 
 #[inline]
-pub fn zeroo_hash(buff: &mut [u8], i: usize) {
+pub(crate) fn zeroo_hash(buff: &mut [u8], i: usize) {
     buff[i..i + HASH_PART_LEN].fill(0);
 }
 
 #[inline]
-pub(super) fn rewrite_hash(buff: &mut [u8], i: usize, rewrite: &StorePath) {
+pub(crate) fn rewrite_hash(buff: &mut [u8], i: usize, rewrite: &StorePath) {
     buff[i..i + HASH_PART_LEN].copy_from_slice(rewrite.hash_bytes());
 }
 
@@ -219,7 +219,7 @@ where
     Ok(hash)
 }
 
-/// search for rewrites and self_hash
+/// search for `rewrites` and `self_hash`
 pub(super) fn search_rewrites<'a>(
     buff: &[u8],
     rewrites: &'a HashMap<StorePath, StorePath>,

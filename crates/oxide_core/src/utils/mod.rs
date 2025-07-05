@@ -21,16 +21,16 @@ pub fn base_name(s: &str) -> &str {
     if end == 0 {
         return s;
     }
-    let end = if s.ends_with("/") { end - 1 } else { end };
-    let start = s[..end].rfind("/").map_or(0, |start| start + 1);
+    let end = if s.ends_with('/') { end - 1 } else { end };
+    let start = s[..end].rfind('/').map_or(0, |start| start + 1);
     &s[start..end]
 }
 
 pub fn to_base_name(mut s: String) -> String {
-    if s.ends_with("/") {
+    if s.ends_with('/') {
         s.pop();
     }
-    let start = s.rfind("/").map_or(0, |start| start + 1);
+    let start = s.rfind('/').map_or(0, |start| start + 1);
     s.drain(0..start);
     s
 }

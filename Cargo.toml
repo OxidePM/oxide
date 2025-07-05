@@ -11,9 +11,12 @@ members = ["crates/*"]
 oxide_internal = { path = "crates/oxide_internal" }
 
 [workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
 missing_safety_doc = "allow"
 missing_panics_doc = "allow"
 missing_errors_doc = "allow"
-# TODO: do not allow this lints
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
+# TODO: do not allow the lints below
 declare_interior_mutable_const = "allow"
 borrow_interior_mutable_const = "allow"

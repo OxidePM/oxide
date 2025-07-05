@@ -1,6 +1,9 @@
 use anyhow::{bail, Result};
 use std::{ffi::CString, mem, os::unix::ffi::OsStrExt, path::Path};
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+#[allow(dead_code)] // TODO: locks :)
 pub enum LockMode {
     Read,
     Write,
@@ -63,14 +66,15 @@ impl PathLock {
         Ok((fd, path))
     }
 
-    pub fn unlock(self) {
-        // just run the destructor
-    }
+    #[allow(clippy::unused_self)]
+    #[inline]
+    /// unlocks by running the distructor
+    pub fn unlock(self) {}
 
     fn unlock_ref(&self) {
         unsafe {
             libc::unlink(self.path.as_ptr());
-            libc::write(self.fd, b" ".as_ptr() as *const libc::c_void, 1);
+            libc::write(self.fd, b" ".as_ptr().cast::<libc::c_void>(), 1);
             libc::close(self.fd);
         }
     }

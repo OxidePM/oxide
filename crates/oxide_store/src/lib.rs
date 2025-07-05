@@ -1,8 +1,8 @@
 pub mod api;
 pub mod build;
-pub mod hash;
+pub(crate) mod hash;
 pub mod instantiate;
-pub mod os;
+pub(crate) mod os;
 pub mod stores;
 pub mod types;
 pub mod utils;

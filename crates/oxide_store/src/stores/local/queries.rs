@@ -1,3 +1,5 @@
+#![allow(clippy::needless_raw_string_hashes)]
+
 use super::LocalStore;
 use crate::api::Store;
 use crate::types::{Realisation, StoreObj, ID};
@@ -179,12 +181,5 @@ impl LocalStore {
                 path: Self::path_to_store(row.get(2)),
             })
             .collect())
-    }
-
-    fn path_to_store(path: String) -> StorePath {
-        unsafe {
-            let strip = path.strip_prefix(&Self::store_dir()).unwrap();
-            StorePath::from_string(strip[1..].to_string())
-        }
     }
 }

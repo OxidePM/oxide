@@ -39,9 +39,8 @@ pub fn is_valid_drv(drv: &Drv) -> Result<()> {
             "fixed-output derivations must contain a single output called {}",
             DEFAULT_OUT
         )
-    } else {
-        Ok(())
     }
+    Ok(())
 }
 
 // TODO: move most of the derivation logic to another file
@@ -104,7 +103,7 @@ where
         drv.outputs
             .iter()
             .cloned()
-            .map(|out| (out.into_owned(), "".to_string())),
+            .map(|out| (out.into_owned(), String::new())),
     );
     let mut d = StoreDrv {
         eq_classes,

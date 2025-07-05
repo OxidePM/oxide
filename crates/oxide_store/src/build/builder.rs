@@ -47,7 +47,7 @@ where
     prepare_sandbox(tmp_dir)?;
 
     unsafe {
-        run_process(drv, envs)?;
+        run_process(drv, &envs)?;
     }
 
     Ok(())
@@ -60,21 +60,21 @@ fn strings_to_charptr(strs: Vec<String>) -> Result<(Vec<CString>, Vec<*const lib
         .collect::<Result<Vec<CString>, _>>()?;
     let mut charptr = cstrings
         .iter()
-        .map(|s| s.as_ptr() as *const libc::c_char)
+        .map(|s| s.as_ptr().cast::<libc::c_char>())
         .collect::<Vec<_>>();
     charptr.push(ptr::null());
     Ok((cstrings, charptr))
 }
 
-fn run_child(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
+fn run_child(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()> {
     let mut args = Vec::new();
     args.push(drv.builder.to_string());
-    for arg in drv.args.iter() {
+    for arg in &drv.args {
         args.push(arg.clone());
     }
     let mut env_strs = Vec::new();
-    for (k, v) in envs.iter() {
-        env_strs.push(format!("{}={}", k, v));
+    for (k, v) in envs {
+        env_strs.push(format!("{k}={v}"));
     }
     exec_builder(&drv.builder, args, env_strs)?;
     Ok(())
@@ -86,7 +86,7 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
     let (_args, args) = strings_to_charptr(args)?;
     let (_envs, envs) = strings_to_charptr(envs)?;
     let builder = CString::new(builder)?;
-    let builder = builder.as_ptr() as *const libc::c_char;
+    let builder = builder.as_ptr().cast::<libc::c_char>();
     unsafe {
         let code = libc::execve(builder, args.as_ptr(), envs.as_ptr());
         if code == -1 {
@@ -96,7 +96,7 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
     Ok(())
 }
 
-unsafe fn run_process(drv: &StoreDrv, envs: HashMap<String, String>) -> Result<()> {
+unsafe fn run_process(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()> {
     let pid = unsafe { libc::fork() };
     if pid == 0 {
         run_child(drv, envs)

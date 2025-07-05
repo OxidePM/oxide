@@ -7,7 +7,7 @@ pub const BUFF_SIZE: usize = 128 * 1024;
 
 pub struct ChunkReader {
     file: File,
-    buff: Box<[u8; BUFF_SIZE + HASH_PART_LEN - 1]>,
+    buff: Box<[u8]>,
     len: usize,
     offset: u64,
 }
@@ -16,7 +16,7 @@ impl ChunkReader {
     pub fn new(file: File) -> Self {
         ChunkReader {
             file,
-            buff: Box::new([0; BUFF_SIZE + HASH_PART_LEN - 1]),
+            buff: vec![0; BUFF_SIZE + HASH_PART_LEN - 1].into_boxed_slice(),
             len: 0,
             offset: 0,
         }
@@ -48,7 +48,7 @@ pub struct Chunk<'a> {
     offset: u64,
 }
 
-impl<'a> Chunk<'a> {
+impl Chunk<'_> {
     pub fn chunk(&mut self) -> &mut [u8] {
         self.chunk
     }

@@ -26,8 +26,8 @@ pub struct LocalStoreConfig {
 impl LocalStoreConfig {
     pub fn new() -> Self {
         let db_dir = format!("{}/db", CONFIG.state_dir);
-        let db_path = format!("{}/sqlite.db", db_dir);
-        let migrations_dir = format!("{}/migrations", db_dir);
+        let db_path = format!("{db_dir}/sqlite.db");
+        let migrations_dir = format!("{db_dir}/migrations");
         Self {
             db_dir,
             db_path,
@@ -71,7 +71,7 @@ impl Store for LocalStore {
         let hash = hash_mod_rewrites(&p, opt.algo, &opt.rewrites, opt.self_hash.as_ref()).await?;
         let path = make_path(&hash, &opt.name);
         if fix || !self.valid(&path).await? {
-            info!("add to store: {}", path);
+            info!("add to store: {path}");
             let full_path = Self::store_path(&path);
             let lock_file = add_lock_ext(&full_path);
             let lock = PathLock::lock(lock_file, LockMode::Write)?;
@@ -98,7 +98,7 @@ impl Store for LocalStore {
             lock.unlock();
         }
         if let Some(mut eq_refs) = opt.eq_refs {
-            for eq_ref in eq_refs.refs.iter_mut() {
+            for eq_ref in &mut eq_refs.refs {
                 rewrite_store_path(&mut eq_ref.path, &opt.rewrites);
             }
             self.register_realisation(
@@ -133,6 +133,13 @@ impl LocalStore {
         P: AsRef<Path>,
     {
         path.as_ref().starts_with(&CONFIG.store_dir)
+    }
+
+    fn path_to_store(path: &str) -> StorePath {
+        unsafe {
+            let strip = path.strip_prefix(&Self::store_dir()).unwrap();
+            StorePath::from_string(strip[1..].to_string())
+        }
     }
 
     async fn copy_path<P, Q>(&self, src: P, dst: Q) -> Result<()>

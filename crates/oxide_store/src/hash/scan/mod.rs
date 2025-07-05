@@ -1,27 +1,29 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{Result, bail};
-use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
+use anyhow::{bail, Result};
+use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
 use std::collections::HashSet;
 use std::path::Path;
 use tokio::fs::{self, OpenOptions};
 
 use super::utils::is_valid_hash_char;
 
-pub async fn scan_for_refs<P>(path: P, mut refs: HashSet<StorePath>) -> Result<HashSet<StorePath>>
+pub(crate) async fn scan_for_refs<P>(
+    path: P,
+    mut hashes: HashSet<StorePath>,
+) -> Result<HashSet<StorePath>>
 where
     P: AsRef<Path>,
 {
     let mut res = HashSet::new();
-    if scan_root(path, &mut refs, &mut res).await?.is_none() {
+    if scan_root(path, &mut hashes, &mut res).await?.is_none() {
         bail!("unknown file type");
-    } else {
-        Ok(res)
     }
+    Ok(res)
 }
 
 async fn scan_root<P>(
     path: P,
-    refs: &mut HashSet<StorePath>,
+    hashes: &mut HashSet<StorePath>,
     res: &mut HashSet<StorePath>,
 ) -> Result<Option<()>>
 where
@@ -29,11 +31,11 @@ where
 {
     let path = path.as_ref();
     Ok(if path.is_dir() {
-        Some(scan_dir(path, refs, res).await?)
+        Some(scan_dir(path, hashes, res).await?)
     } else if path.is_file() {
-        Some(scan_file(path, refs, res).await?)
+        Some(scan_file(path, hashes, res).await?)
     } else if path.is_symlink() {
-        Some(scan_symlink(path, refs, res).await?)
+        Some(scan_symlink(path, hashes, res).await?)
     } else {
         None
     })
@@ -41,7 +43,7 @@ where
 
 async fn scan_dir<P>(
     path: P,
-    refs: &mut HashSet<StorePath>,
+    hashes: &mut HashSet<StorePath>,
     res: &mut HashSet<StorePath>,
 ) -> Result<()>
 where
@@ -50,14 +52,14 @@ where
     let mut entries = fs::read_dir(&path).await?;
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
-        _ = Box::pin(scan_root(path, refs, res)).await?;
+        _ = Box::pin(scan_root(path, hashes, res)).await?;
     }
     Ok(())
 }
 
 async fn scan_symlink<P>(
     path: P,
-    refs: &mut HashSet<StorePath>,
+    hashes: &mut HashSet<StorePath>,
     res: &mut HashSet<StorePath>,
 ) -> Result<()>
 where
@@ -65,13 +67,13 @@ where
 {
     let target = fs::read_link(path).await?;
     let buff = target.as_os_str().as_encoded_bytes();
-    search_refs(buff, refs, res);
+    search_refs(buff, hashes, res);
     Ok(())
 }
 
 async fn scan_file<P>(
     path: P,
-    refs: &mut HashSet<StorePath>,
+    hashes: &mut HashSet<StorePath>,
     res: &mut HashSet<StorePath>,
 ) -> Result<()>
 where
@@ -81,7 +83,7 @@ where
 
     let mut reader = ChunkReader::new(file);
     while let Some(mut chunk) = reader.next().await? {
-        search_refs(chunk.chunk(), refs, res);
+        search_refs(chunk.chunk(), hashes, res);
     }
     Ok(())
 }

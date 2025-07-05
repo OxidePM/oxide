@@ -9,6 +9,7 @@ use anyhow::{bail, Result};
 use builder::run_builder;
 use log::info;
 use oxide_core::{
+    drv::StoreDrv,
     hash::HashAlgo,
     store::StorePath,
     types::{EqClass, Out},
@@ -27,7 +28,7 @@ where
     'b: {
         // if all the eq_classes have a trusted path do not build again
         let mut outs = HashMap::new();
-        for (out, eq_class) in drv.eq_classes.iter() {
+        for (out, eq_class) in &drv.eq_classes {
             let trusted = store.trusted_paths(eq_class, out).await?;
             if let Some(path) = trusted.into_iter().next() {
                 outs.insert(out.clone(), path.clone());
@@ -35,43 +36,24 @@ where
                 break 'b;
             }
         }
-        info!("building {}: trusted path found", p);
+        info!("building {p}: trusted path found");
         return Ok(outs);
     }
 
-    for (path, _) in drv.input_drvs.iter() {
+    for path in drv.input_drvs.keys() {
         Box::pin(build(store, path)).await?;
     }
 
-    info!("building: {}", p);
-    let mut inputs = HashSet::new();
-    for (path, _) in drv.input_drvs.iter() {
-        let input_drv = store.read_drv(path).await?;
-        for (out, eq_class) in input_drv.eq_classes {
-            let trusted = store.trusted_paths(&eq_class, &out).await?;
-            for tp in trusted {
-                let closure = closure(
-                    store,
-                    Realisation {
-                        eq_class: eq_class.clone(),
-                        out: out.clone(),
-                        path: tp,
-                    },
-                )
-                .await?;
-                inputs.extend(closure);
-            }
-        }
-    }
-    let inputs = resolve(store, inputs).await?;
+    let inputs = inputs(store, &drv).await?;
+    info!("building: {p}");
 
     let mut mappings = HashMap::new();
-    for r in inputs.iter() {
+    for r in &inputs {
         // how can we avoid this clone?
         mappings.insert(r.eq_class.clone(), r.path.clone());
     }
     rewrite_str(&mut drv.builder, &mappings);
-    for arg in drv.args.iter_mut() {
+    for arg in &mut drv.args {
         rewrite_str(arg, &mappings);
     }
     for v in drv.envs.values_mut() {
@@ -92,7 +74,7 @@ where
     run_builder::<S>(&drv).await?;
 
     // check that every output path was produced
-    for (out, eq_class) in outputs.iter() {
+    for (out, eq_class) in &outputs {
         let tmp_path = S::store_path(eq_class);
         let tmp_path = Path::new(&tmp_path);
         if !tmp_path.exists() {
@@ -145,20 +127,48 @@ where
     Ok(outs)
 }
 
+pub async fn inputs<S>(store: &S, drv: &StoreDrv) -> Result<Vec<Realisation>>
+where
+    S: Store,
+{
+    let mut inputs = HashSet::new();
+    for path in drv.input_drvs.keys() {
+        let input_drv = store.read_drv(path).await?;
+        for (out, eq_class) in input_drv.eq_classes {
+            let trusted = store.trusted_paths(&eq_class, &out).await?;
+            for tp in trusted {
+                let closure = closure(
+                    store,
+                    Realisation {
+                        eq_class: eq_class.clone(),
+                        out: out.clone(),
+                        path: tp,
+                    },
+                )
+                .await?;
+                inputs.extend(closure);
+            }
+        }
+    }
+    resolve(store, inputs).await
+}
+
 fn selected_paths(
     conflicts: HashMap<(EqClass, Out), Vec<StorePath>>,
 ) -> HashMap<(EqClass, Out), StorePath> {
     let mut selected = HashMap::new();
     for ((eq_class, out), conflict) in conflicts {
-        if conflict.len() > 1 {
-            panic!("right now conflicts cannot be resolved");
-        }
+        assert!(
+            conflict.len() == 1,
+            "right now conflicts cannot be resolved"
+        );
         let path = conflict.into_iter().next().unwrap();
         selected.insert((eq_class, out), path);
     }
     selected
 }
 
+#[allow(clippy::pedantic)]
 async fn maybe_rewrite<S>(
     store: &S,
     r: Realisation,
@@ -211,9 +221,9 @@ async fn closure_helper<S>(store: &S, r: Realisation, res: &mut HashSet<Realisat
 where
     S: Store,
 {
-    let refs = store.realisation_refs(&r).await?;
+    let closure = store.realisation_refs(&r).await?;
     res.insert(r);
-    for r in refs {
+    for r in closure {
         Box::pin(closure_helper(store, r, res)).await?;
     }
     Ok(())

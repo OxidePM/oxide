@@ -80,7 +80,7 @@ pub struct DrvSerializer<'a, F> {
     pub drv: &'a StoreDrv,
 }
 
-impl<'a, F> Serialize for DrvSerializer<'a, F>
+impl<F> Serialize for DrvSerializer<'_, F>
 where
     F: Fn(&StorePath) -> String,
 {

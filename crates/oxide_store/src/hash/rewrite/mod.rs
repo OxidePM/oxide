@@ -8,7 +8,7 @@ use tokio::{
     io::{AsyncSeekExt, AsyncWriteExt},
 };
 
-pub fn rewrite_str(s: &mut str, rewrites: &HashMap<StorePath, StorePath>) {
+pub(crate) fn rewrite_str(s: &mut str, rewrites: &HashMap<StorePath, StorePath>) {
     let bytes = unsafe { s.as_bytes_mut() };
     let occ = search_rewrites(bytes, rewrites, None);
     for (i, rewrite) in occ {
@@ -16,21 +16,24 @@ pub fn rewrite_str(s: &mut str, rewrites: &HashMap<StorePath, StorePath>) {
     }
 }
 
-pub fn rewrite_store_path(path: &mut StorePath, rewrites: &HashMap<StorePath, StorePath>) {
+pub(crate) fn rewrite_store_path(path: &mut StorePath, rewrites: &HashMap<StorePath, StorePath>) {
     if let Some(rewrite) = rewrites.get(path.hash_bytes()) {
         path.rewrite_hash_part(rewrite);
     }
 }
 
-pub async fn rewrite_self_hash<P>(path: P, self_hash: &StorePath, rewrite: &StorePath) -> Result<()>
+pub(crate) async fn rewrite_self_hash<P>(
+    path: P,
+    self_hash: &StorePath,
+    rewrite: &StorePath,
+) -> Result<()>
 where
     P: AsRef<Path>,
 {
     if rewrite_root(path, self_hash, rewrite).await?.is_none() {
         bail!("unknown file type")
-    } else {
-        Ok(())
     }
+    Ok(())
 }
 
 async fn rewrite_root<P>(path: P, self_hash: &StorePath, rewrite: &StorePath) -> Result<Option<()>>
@@ -115,7 +118,7 @@ fn search_self_hash(buff: &[u8], self_hash: &StorePath) -> Vec<usize> {
         }
         let ref_hash: HashPart<'_> = &buff[i..i + HASH_PART_LEN].try_into().unwrap();
         if &ref_hash == self_hash {
-            occ.push(i)
+            occ.push(i);
         }
         i += 1;
     }
