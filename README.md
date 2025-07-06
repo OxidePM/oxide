@@ -2,8 +2,10 @@
 # Oxide
 This project is still in the earliest days of development
 
-**Oxide** is a Package Manager based on Nix\
-**Oxide** is written in RUST and has a content-addressed store
+[Oxide](https://github.com/OxidePM/oxide) is a Package Manager based on [Nix](https://github.com/NixOS/nix)\
+[Oxide](https://github.com/OxidePM/oxide) is written in RUST and has a content-addressed store
+
+The [pkgs](https://github.com/OxidePM/oxide-pkgs) collection can be found [here](https://github.com/OxidePM/oxide-pkgs)
 
 Short term goals:
 - [ ] Create an actually usable package collection instead of the "toy" that is being used for testing

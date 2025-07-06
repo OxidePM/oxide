@@ -31,6 +31,12 @@ pub struct Drv {
     pub args: Vec<Expr>,
 }
 
+impl IntoDrv for Drv {
+    fn into_drv(self: Box<Self>) -> Drv {
+        *self
+    }
+}
+
 pub struct DrvBuilder {
     name: Cow<str>,
     outputs: Option<Vec<Cow<str>>>,

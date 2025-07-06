@@ -72,3 +72,17 @@ impl From<Cow<[Expr]>> for Expr {
         Self::Array(value)
     }
 }
+
+#[macro_export]
+macro_rules! expr {
+    ($e:expr) => {
+        $e.into()
+    };
+    [$($e:expr),* $(,)?] => {
+        Expr::Array(Cow::Owned(vec![
+            $(expr!($e)),*
+        ]))
+    };
+}
+
+pub use expr;
