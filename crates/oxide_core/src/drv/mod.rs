@@ -38,8 +38,8 @@ impl IntoDrv for Drv {
 }
 
 pub struct DrvBuilder {
-    name: Cow<str>,
-    outputs: Option<Vec<Cow<str>>>,
+    name: Option<Cow<str>>,
+    outputs: Vec<Cow<str>>,
     fixed_hash: Option<Hash>,
     system: Option<System>,
     inputs: HashMap<String, Expr>,
@@ -48,13 +48,10 @@ pub struct DrvBuilder {
 }
 
 impl DrvBuilder {
-    pub fn new<T>(name: T) -> Self
-    where
-        T: Into<Cow<str>>,
-    {
+    pub fn new() -> Self {
         Self {
-            name: name.into(),
-            outputs: None,
+            name: None,
+            outputs: Vec::new(),
             fixed_hash: None,
             system: None,
             inputs: HashMap::new(),
@@ -67,7 +64,7 @@ impl DrvBuilder {
     where
         T: Into<Cow<str>>,
     {
-        self.name = name.into();
+        self.name = Some(name.into());
         self
     }
 
@@ -75,9 +72,7 @@ impl DrvBuilder {
     where
         T: Into<Cow<str>>,
     {
-        let mut outputs = self.outputs.unwrap_or_default();
-        outputs.push(out.into());
-        self.outputs = Some(outputs);
+        self.outputs.push(out.into());
         self
     }
 
@@ -100,6 +95,17 @@ impl DrvBuilder {
         self
     }
 
+    pub fn input_if<K, V>(mut self, key: K, expr: Option<V>) -> Self
+    where
+        K: Into<String>,
+        V: Into<Expr>,
+    {
+        if let Some(expr) = expr {
+            self.inputs.insert(key.into(), expr.into());
+        }
+        self
+    }
+
     pub fn builder<T>(mut self, builder: T) -> Self
     where
         T: Into<Expr>,
@@ -118,8 +124,12 @@ impl DrvBuilder {
 
     pub fn build(self) -> Drv {
         Drv {
-            name: self.name,
-            outputs: self.outputs.unwrap_or(vec![DEFAULT_OUT.into()]),
+            name: self.name.expect("name must be provided"),
+            outputs: if self.outputs.is_empty() {
+                vec![DEFAULT_OUT.into()]
+            } else {
+                self.outputs
+            },
             fixed_hash: self.fixed_hash,
             system: self.system.unwrap_or(current_system()),
             inputs: self.inputs,
