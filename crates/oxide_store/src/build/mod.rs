@@ -5,7 +5,7 @@ use crate::{
     hash::{rewrite_str, scan_for_refs, utils::random_path},
     types::Realisation,
 };
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use builder::run_builder;
 use log::info;
 use oxide_core::{
@@ -72,6 +72,9 @@ where
     );
 
     run_builder::<S>(&drv).await?;
+    if drv.builtin().is_some() {
+        return Ok(HashMap::new());
+    }
 
     // check that every output path was produced
     for (out, eq_class) in &outputs {

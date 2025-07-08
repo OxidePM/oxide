@@ -5,14 +5,14 @@ use crate::{types::Realisation, utils::tempfile::tempfile_in};
 use anyhow::Result;
 use oxide_core::{
     drv::StoreDrv,
-    store::{StorePath, config::Config},
+    store::{config::Config, StorePath},
     types::{EqClass, Out},
 };
 use std::cell::LazyCell;
 use std::path::Path;
 use tokio::{
     fs,
-    io::{self, AsyncBufRead, BufReader, BufWriter},
+    io::{self, AsyncBufRead, BufReader},
 };
 
 // TODO: maybe do not use a global variable
@@ -28,9 +28,8 @@ pub trait Store {
     where
         R: AsyncBufRead + Unpin,
     {
-        let (file, path) = tempfile_in(&CONFIG.store_dir).await?;
-        let mut dst = BufWriter::new(file);
-        io::copy(&mut buff, &mut dst).await?;
+        let (mut file, path) = tempfile_in(&CONFIG.store_dir).await?;
+        io::copy(&mut buff, &mut file).await?;
         self.add_to_store(
             path,
             Opt {

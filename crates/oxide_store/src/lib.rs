@@ -1,5 +1,6 @@
 pub mod api;
 pub mod build;
+pub mod builtins;
 pub(crate) mod hash;
 pub mod instantiate;
 pub(crate) mod os;

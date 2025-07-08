@@ -1,3 +1,4 @@
+pub mod builtins;
 pub mod drv;
 pub mod expr;
 pub mod hash;

@@ -1,16 +1,16 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use oxide_core::hash::{Hash, HashAlgo};
-use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
+use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
+use oxide_core::utils::file_type_to_permission;
 use sha2::{Digest, Sha256, Sha512};
 use std::io::SeekFrom;
 use std::{
     collections::{BTreeMap, HashMap},
-    os::unix::fs::PermissionsExt,
     path::Path,
 };
+use tokio::fs;
 use tokio::fs::OpenOptions;
-use tokio::fs::{self, DirEntry};
 use tokio::io::AsyncSeekExt as _;
 use tokio::io::AsyncWriteExt as _;
 
@@ -86,28 +86,6 @@ where
     })
 }
 
-pub const DIR_PERMISSION: u64 = 100_755;
-pub const FILE_PERMISSION: u64 = 100_644;
-pub const EXEC_FILE_PERMISSION: u64 = 100_644;
-pub const SYMLINK_PERMISSION: u64 = 100_644;
-
-pub async fn file_type_to_permission(entry: DirEntry) -> Result<u64> {
-    let metadata = entry.metadata().await?;
-    Ok(if metadata.is_dir() {
-        DIR_PERMISSION
-    } else if metadata.is_file() {
-        if metadata.permissions().mode() == libc::S_IEXEC {
-            EXEC_FILE_PERMISSION
-        } else {
-            FILE_PERMISSION
-        }
-    } else if metadata.is_symlink() {
-        SYMLINK_PERMISSION
-    } else {
-        0
-    })
-}
-
 async fn hash_dir<H, P>(
     path: P,
     rewrites: &HashMap<StorePath, StorePath>,
@@ -132,7 +110,8 @@ where
         let Some(hash) = Box::pin(hash_root::<H, _>(path, rewrites, self_hash)).await? else {
             continue;
         };
-        let perm = file_type_to_permission(entry).await?;
+        let metadata = entry.metadata().await?;
+        let perm = u64::from(file_type_to_permission(&metadata));
         hasher.update(perm.to_be_bytes());
         hasher.update((file_name.len() as u64).to_be_bytes());
         hasher.update(file_name.as_encoded_bytes());

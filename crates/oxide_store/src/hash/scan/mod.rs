@@ -1,9 +1,9 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{Result, bail};
-use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
+use anyhow::{bail, Result};
+use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
 use std::collections::HashSet;
 use std::path::Path;
-use tokio::fs::{self, OpenOptions};
+use tokio::fs::{self, File};
 
 use super::utils::is_valid_hash_char;
 
@@ -79,7 +79,7 @@ async fn scan_file<P>(
 where
     P: AsRef<Path>,
 {
-    let file = OpenOptions::new().read(true).open(path).await?;
+    let file = File::open(path).await?;
 
     let mut reader = ChunkReader::new(file);
     while let Some(mut chunk) = reader.next().await? {

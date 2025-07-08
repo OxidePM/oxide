@@ -138,3 +138,9 @@ impl DrvBuilder {
         }
     }
 }
+
+impl Default for DrvBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}

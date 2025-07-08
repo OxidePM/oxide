@@ -9,6 +9,8 @@ The [pkgs](https://github.com/OxidePM/oxide-pkgs) collection can be found [here]
 
 Short term goals:
 - [ ] Create an actually usable package collection instead of the "toy" that is being used for testing
+- [ ] Add support for format expressions e.g. `echo "the path of python is {self.python}"`
+now it only supports suffixes e.g. `{self.python}/bin/python`
 - [ ] Rewrite every recursive function to a non recursive version
 to allow this PM to run on embedded systems, and to not pin futures
 - [ ] Better error messages. With file and line number in debug mode
