@@ -128,6 +128,16 @@ impl DrvBuilder {
         self
     }
 
+    pub fn input_bool<K>(mut self, key: K, v: bool) -> Self
+    where
+        K: Into<String>,
+    {
+        if v {
+            self.inputs.insert(key.into(), "1".into());
+        }
+        self
+    }
+
     pub fn builder<T>(mut self, builder: T) -> Self
     where
         T: Into<Expr>,

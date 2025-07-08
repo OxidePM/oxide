@@ -35,10 +35,9 @@ pub fn to_base_name(mut s: String) -> String {
     s
 }
 
-pub const DIR_PERMISSION: u32 = 100_755;
-pub const FILE_PERMISSION: u32 = 100_644;
-pub const EXEC_FILE_PERMISSION: u32 = 100_644;
-pub const SYMLINK_PERMISSION: u32 = 100_644;
+pub const DIR_PERMISSION: u32 = 555;
+pub const FILE_PERMISSION: u32 = 444;
+pub const EXEC_FILE_PERMISSION: u32 = 555;
 
 #[inline]
 pub fn file_type_to_permission(metadata: &Metadata) -> u32 {
@@ -52,7 +51,7 @@ pub fn file_type_to_permission(metadata: &Metadata) -> u32 {
             FILE_PERMISSION
         }
     } else if metadata.is_symlink() {
-        SYMLINK_PERMISSION
+        unimplemented!()
     } else {
         0
     }

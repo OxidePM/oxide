@@ -1,10 +1,10 @@
 use crate::{
     api::Store,
-    builtins::{Ctx, fetch_url},
+    builtins::{fetch_url, Ctx},
     os::sandbox::prepare_sandbox,
     utils::tempfile::tempdir_in,
 };
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use oxide_core::drv::StoreDrv;
 use std::{collections::HashMap, ffi::CString, ptr};
 
@@ -15,8 +15,22 @@ pub async fn run_builder<S>(drv: &StoreDrv) -> Result<()>
 where
     S: Store,
 {
-    prepare_build::<S>(drv).await?;
-    Ok(())
+    if let Some(builtin) = drv.builtin() {
+        let outputs = drv
+            .eq_classes
+            .iter()
+            .map(|(k, v)| (k.clone(), S::store_path(v)))
+            .collect();
+        let ctx = Ctx { drv, outputs };
+        if builtin == "fetchurl" {
+            fetch_url(ctx).await
+        } else {
+            bail!("unkown builtin {}", builtin)
+        }
+    } else {
+        prepare_build::<S>(drv).await?;
+        Ok(())
+    }
 }
 
 // TODO: maybe replace envs with Cows since many of them are &str
@@ -51,11 +65,7 @@ where
     let envs = builder_envs::<S>(drv);
     prepare_sandbox(tmp_dir)?;
 
-    unsafe {
-        run_process::<S>(drv, &envs).await?;
-    }
-
-    Ok(())
+    unsafe { run_process(drv, &envs) }
 }
 
 fn strings_to_charptr(strs: Vec<String>) -> Result<(Vec<CString>, Vec<*const libc::c_char>)> {
@@ -71,35 +81,18 @@ fn strings_to_charptr(strs: Vec<String>) -> Result<(Vec<CString>, Vec<*const lib
     Ok((cstrings, charptr))
 }
 
-async fn run_child<S>(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()>
-where
-    S: Store,
-{
-    if let Some(builtin) = drv.builtin() {
-        let outputs = drv
-            .eq_classes
-            .iter()
-            .map(|(k, v)| (k.clone(), S::store_path(v)))
-            .collect();
-        let ctx = Ctx { drv, outputs };
-        if builtin == "fetchurl" {
-            fetch_url(ctx).await
-        } else {
-            bail!("unkown builtin {}", builtin)
-        }
-    } else {
-        let mut args = Vec::new();
-        args.push(drv.builder.to_string());
-        for arg in &drv.args {
-            args.push(arg.clone());
-        }
-        let mut env_strs = Vec::new();
-        for (k, v) in envs {
-            env_strs.push(format!("{k}={v}"));
-        }
-        exec_builder(&drv.builder, args, env_strs)?;
-        Ok(())
+fn run_child(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()> {
+    let mut args = Vec::new();
+    args.push(drv.builder.to_string());
+    for arg in &drv.args {
+        args.push(arg.clone());
     }
+    let mut env_strs = Vec::new();
+    for (k, v) in envs {
+        env_strs.push(format!("{k}={v}"));
+    }
+    exec_builder(&drv.builder, args, env_strs)?;
+    Ok(())
 }
 
 fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<()> {
@@ -118,13 +111,10 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
     Ok(())
 }
 
-async unsafe fn run_process<S>(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()>
-where
-    S: Store,
-{
+unsafe fn run_process(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<()> {
     let pid = unsafe { libc::fork() };
     if pid == 0 {
-        run_child::<S>(drv, envs).await
+        run_child(drv, envs)
     } else if pid == -1 {
         bail!("unable to fork process");
     } else {

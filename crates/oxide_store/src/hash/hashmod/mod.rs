@@ -1,10 +1,11 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use oxide_core::hash::{Hash, HashAlgo};
-use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
-use oxide_core::utils::file_type_to_permission;
+use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
 use sha2::{Digest, Sha256, Sha512};
+use std::fs::Metadata;
 use std::io::SeekFrom;
+use std::os::unix::fs::PermissionsExt;
 use std::{
     collections::{BTreeMap, HashMap},
     path::Path,
@@ -37,6 +38,9 @@ where
         H: Digest,
         P: AsRef<Path>,
     {
+        if !path.as_ref().exists() {
+            bail!("file {} does not exists", path.as_ref().display())
+        }
         if let Some(hash) = hash_root::<H, P>(path, rewrites, self_hash).await? {
             Ok(hash)
         } else {
@@ -86,6 +90,28 @@ where
     })
 }
 
+pub(crate) const DIR_TYPE: u64 = 40_000;
+pub(crate) const FILE_TYPE: u64 = 100_644;
+pub(crate) const EXEC_TYPE: u64 = 100_755;
+pub(crate) const SYMLINK_TYPE: u64 = 120_000;
+
+#[inline]
+fn file_type(metadata: &Metadata) -> u64 {
+    if metadata.is_dir() {
+        DIR_TYPE
+    } else if metadata.is_file() {
+        if metadata.permissions().mode() & 0o111 == 0 {
+            FILE_TYPE
+        } else {
+            EXEC_TYPE
+        }
+    } else if metadata.is_symlink() {
+        SYMLINK_TYPE
+    } else {
+        0
+    }
+}
+
 async fn hash_dir<H, P>(
     path: P,
     rewrites: &HashMap<StorePath, StorePath>,
@@ -111,8 +137,8 @@ where
             continue;
         };
         let metadata = entry.metadata().await?;
-        let perm = u64::from(file_type_to_permission(&metadata));
-        hasher.update(perm.to_be_bytes());
+        let ft = file_type(&metadata);
+        hasher.update(ft.to_be_bytes());
         hasher.update((file_name.len() as u64).to_be_bytes());
         hasher.update(file_name.as_encoded_bytes());
         hasher.update((hash.len() as u64).to_be_bytes());

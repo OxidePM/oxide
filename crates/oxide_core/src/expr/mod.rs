@@ -79,7 +79,7 @@ macro_rules! expr {
         $e.into()
     };
     [$($e:expr),* $(,)?] => {
-        Expr::Array(Cow::Owned(vec![
+        $crate::expr::Expr::Array($crate::types::Cow::Owned(vec![
             $(expr!($e)),*
         ]))
     };

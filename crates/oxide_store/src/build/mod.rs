@@ -2,14 +2,14 @@ mod builder;
 
 use crate::{
     api::{EqRefs, Opt, Store},
-    hash::{rewrite_str, scan_for_refs, utils::random_path},
+    hash::{hash_mod_rewrites, rewrite_str, scan_for_refs, utils::random_path},
     types::Realisation,
 };
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use builder::run_builder;
 use log::info;
 use oxide_core::{
-    drv::StoreDrv,
+    drv::{StoreDrv, DEFAULT_OUT},
     hash::HashAlgo,
     store::StorePath,
     types::{EqClass, Out},
@@ -81,9 +81,13 @@ where
         let tmp_path = S::store_path(eq_class);
         let tmp_path = Path::new(&tmp_path);
         if !tmp_path.exists() {
-            bail!("builder failed to produce output {}", out);
+            bail!("builder failed to produce output {out}");
         }
     }
+
+    // check that output was valid
+    // TODO: we are computin hash two times, how can we solve that?
+    valid_fixed_output_drv::<S>(&drv, &outputs).await?;
 
     let mut refs = inputs
         .iter()
@@ -154,6 +158,26 @@ where
         }
     }
     resolve(store, inputs).await
+}
+
+async fn valid_fixed_output_drv<S>(
+    drv: &StoreDrv,
+    outputs: &HashMap<String, StorePath>,
+) -> Result<()>
+where
+    S: Store,
+{
+    if let Some(ref fixed_hash) = drv.fixed_hash {
+        let eq_class = outputs.get(DEFAULT_OUT).unwrap();
+        let tmp_path = S::store_path(eq_class);
+        let path = Path::new(&tmp_path);
+        let hash =
+            hash_mod_rewrites(path, fixed_hash.algo(), &HashMap::new(), Some(eq_class)).await?;
+        if &hash != fixed_hash {
+            bail!("hash mismatch\nexpected {fixed_hash} got {hash}");
+        }
+    }
+    Ok(())
 }
 
 fn selected_paths(

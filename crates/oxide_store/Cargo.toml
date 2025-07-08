@@ -11,7 +11,7 @@ libc = "0.2.172"
 log = "0.4.27"
 oxide_core = { path = "../oxide_core" }
 rand = "0.9.1"
-reqwest = { version = "0.12.22", features = ["stream"] }
+reqwest = { version = "0.12.22", features = ["stream", "rustls-tls"], default-features = false }
 serde = { version = "1.0.219", features = ["derive"] }
 sha2 = "0.10.9"
 sqlx = { version = "0.8.5", features = [

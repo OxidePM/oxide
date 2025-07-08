@@ -1,3 +1,4 @@
+use super::BUILTIN_PREFIX;
 use crate::{
     drv::{Drv, DrvBuilder, IntoDrv},
     hash::Hash,
@@ -20,6 +21,7 @@ impl IntoDrv for FetchUrl {
             .unwrap_or_else(|| to_base_name(self.url.to_string()).into());
         DrvBuilder::new()
             .name(name)
+            .builder(format!("{BUILTIN_PREFIX}fetchurl"))
             .fixed_hash(self.hash)
             .input("url", self.url)
             .input_if("unpack", self.unpack.then_some("1"))

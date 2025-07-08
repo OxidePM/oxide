@@ -1,12 +1,9 @@
-use oxide_core::utils::{DIR_PERMISSION, FILE_PERMISSION};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use std::ffi::OsString;
-use std::fs::Permissions;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
-use tokio::fs::{self, OpenOptions};
+use tokio::fs::{self};
 use tokio::io;
 
 const NUM_RAND_CHARS: usize = 32;
@@ -35,13 +32,7 @@ where
     P: AsRef<Path>,
 {
     let path = p.as_ref().join(tmpname());
-    let file = OpenOptions::new()
-        .mode(FILE_PERMISSION)
-        .write(true)
-        .create_new(true)
-        .open(&path)
-        .await?;
-    Ok((file, path))
+    Ok((File::create(&path).await?, path))
 }
 
 // TODO: tempdir does not get deleted
@@ -51,7 +42,6 @@ where
 {
     let path = p.as_ref().join(tmpname());
     fs::create_dir(&path).await?;
-    fs::set_permissions(&path, Permissions::from_mode(DIR_PERMISSION)).await?;
     Ok(path)
 }
 

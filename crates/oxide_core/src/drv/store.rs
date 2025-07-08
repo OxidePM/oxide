@@ -1,3 +1,4 @@
+use crate::builtins::BUILTIN_PREFIX;
 use crate::hash::Hash;
 use crate::types::{EqClass, Out};
 use crate::utils::to_base_name;
@@ -5,8 +6,6 @@ use crate::{store::StorePath, system::System};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-
-pub const BUILTIN_PREFIX: &str = "builtin:";
 
 #[derive(Clone, Debug)]
 pub struct StoreDrv {

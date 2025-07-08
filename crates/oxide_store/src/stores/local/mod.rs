@@ -1,23 +1,24 @@
 mod queries;
 
-use crate::api::{CONFIG, Opt, Store};
+use crate::api::{Opt, Store, CONFIG};
 use crate::hash::utils::make_path;
 use crate::hash::{hash_mod_rewrites, rewrite_self_hash, rewrite_store_path};
 use crate::os::lock::{LockMode, PathLock};
 use crate::types::{Realisation, StoreObj};
 use crate::utils::{add_lock_ext, is_valid_name};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
 use oxide_core::utils::file_type_to_permission;
-use sqlx::SqlitePool;
 use sqlx::migrate::Migrator;
+use sqlx::SqlitePool;
 use std::cell::LazyCell;
+use std::fs::Permissions;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
-use tokio::fs::{File, OpenOptions};
-use tokio::{fs, io};
+use tokio::fs;
 
 pub struct LocalStoreConfig {
     pub db_dir: String,
@@ -150,29 +151,21 @@ impl LocalStore {
         Q: AsRef<Path>,
     {
         // delete dst if already exists
+        let metadata = fs::metadata(&src).await?;
+        let mode = file_type_to_permission(&metadata);
         if dst.as_ref().is_dir() {
             fs::remove_dir_all(&dst).await?;
         } else if dst.as_ref().is_file() || dst.as_ref().is_symlink() {
             fs::remove_file(&dst).await?;
         }
-        let metadata = fs::metadata(&src).await?;
-        let mode = file_type_to_permission(&metadata);
         // if the path is in the store and it is temporary move it
         // otherwise copy it
         if Self::is_store_path(&src) {
-            // if the file is in the store the permission bits are already correct
             fs::rename(&src, &dst).await?;
         } else {
-            let mut src = File::open(&src).await?;
-            let mut dst = OpenOptions::new()
-                .mode(mode)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(&dst)
-                .await?;
-            io::copy(&mut src, &mut dst).await?;
+            fs::copy(&src, &dst).await?;
         }
+        fs::set_permissions(&dst, Permissions::from_mode(mode)).await?;
         Ok(())
     }
 
