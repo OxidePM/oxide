@@ -1,7 +1,7 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use oxide_core::hash::{Hash, HashAlgo};
-use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
+use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
 use oxide_core::utils::file_type_to_permission;
 use sha2::{Digest, Sha256, Sha512};
 use std::io::SeekFrom;

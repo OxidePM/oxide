@@ -5,7 +5,7 @@ use crate::{types::Realisation, utils::tempfile::tempfile_in};
 use anyhow::Result;
 use oxide_core::{
     drv::StoreDrv,
-    store::{config::Config, StorePath},
+    store::{StorePath, config::Config},
     types::{EqClass, Out},
 };
 use std::cell::LazyCell;

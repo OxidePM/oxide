@@ -1,6 +1,6 @@
 use oxide_core::utils::{DIR_PERMISSION, FILE_PERMISSION};
 use rand::distr::Alphanumeric;
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use std::ffi::OsString;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
