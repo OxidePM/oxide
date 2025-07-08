@@ -6,15 +6,15 @@ use crate::{
 };
 
 pub struct FetchUrl {
-    name: Option<Cow<str>>,
-    url: Cow<str>,
-    hash: Hash,
-    unpack: bool,
-    executable: bool,
+    pub name: Option<Cow<str>>,
+    pub url: Cow<str>,
+    pub hash: Hash,
+    pub unpack: bool,
+    pub executable: bool,
 }
 
 impl IntoDrv for FetchUrl {
-    fn into_drv(self: Box<Self>) -> Drv {
+    fn into_drv(self) -> Drv {
         let name = self
             .name
             .unwrap_or_else(|| to_base_name(self.url.to_string()).into());

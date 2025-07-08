@@ -16,8 +16,30 @@ use std::collections::HashMap;
 pub const DRV_EXT: &str = ".drv";
 pub const DEFAULT_OUT: &str = "out";
 
-pub trait IntoDrv {
-    fn into_drv(self: Box<Self>) -> Drv;
+pub trait IntoDrv: IntoDrvBoxed {
+    fn into_drv(self) -> Drv;
+}
+
+pub trait IntoDrvBoxed {
+    fn into_drv_boxed(self: Box<Self>) -> Drv;
+}
+
+impl<T> IntoDrvBoxed for T
+where
+    T: IntoDrv,
+{
+    fn into_drv_boxed(self: Box<Self>) -> Drv {
+        (*self).into_drv()
+    }
+}
+
+impl<T> IntoDrv for Box<T>
+where
+    T: ?Sized + IntoDrv,
+{
+    fn into_drv(self) -> Drv {
+        self.into_drv_boxed()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -32,8 +54,8 @@ pub struct Drv {
 }
 
 impl IntoDrv for Drv {
-    fn into_drv(self: Box<Self>) -> Drv {
-        *self
+    fn into_drv(self) -> Drv {
+        self
     }
 }
 

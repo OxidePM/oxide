@@ -35,7 +35,7 @@ impl LazyDrv {
         Rc::clone(
             self.0
                 .drv
-                .get_or_init(|| Rc::new(self.0.component.borrow_mut().take().unwrap().into_drv())),
+                .get_or_init(|| Rc::new(self.0.component.take().unwrap().into_drv())),
         )
     }
 
