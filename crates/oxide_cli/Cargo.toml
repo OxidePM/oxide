@@ -6,8 +6,9 @@ edition = "2024"
 [dependencies]
 oxide_core = { path = "../oxide_core" }
 oxide_store = { path = "../oxide_store" }
-# oxide-pkgs = { git = "https://github.com/OxidePM/oxide-pkgs.git" }
-oxide-pkgs = { path = "../../../oxide-pkgs" } # TODO: remove it is just for testing
+oxide-pkgs = { git = "https://github.com/OxidePM/oxide-pkgs.git" }
+# uncomment the next line to test
+# oxide-pkgs = { path = "../../../oxide-pkgs" }
 anyhow = "1.0.98"
 clap = { version = "4.5.40", features = ["derive"] }
 log = "0.4.27"
