@@ -5,11 +5,11 @@ use crate::{
     hash::{hash_mod_rewrites, rewrite_str, scan_for_refs, utils::random_path},
     types::Realisation,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use builder::run_builder;
 use log::info;
 use oxide_core::{
-    drv::{StoreDrv, DEFAULT_OUT},
+    drv::{DEFAULT_OUT, StoreDrv},
     hash::HashAlgo,
     store::StorePath,
     types::{EqClass, Out},
@@ -36,7 +36,7 @@ where
                 break 'b;
             }
         }
-        info!("building {p}: trusted path found");
+        info!("building: {p}: trusted path found");
         return Ok(outs);
     }
 
@@ -60,11 +60,14 @@ where
         rewrite_str(v, &mappings);
     }
 
-    let outputs = drv
-        .eq_classes
-        .iter()
-        .map(|(out, eq_class)| (out.clone(), random_path(eq_class.name_part())))
-        .collect::<HashMap<_, _>>();
+    let outputs = if drv.fixed_hash.is_some() {
+        drv.eq_classes.clone().into_iter().collect()
+    } else {
+        drv.eq_classes
+            .iter()
+            .map(|(out, eq_class)| (out.clone(), random_path(eq_class.name_part())))
+            .collect::<HashMap<_, _>>()
+    };
     drv.envs.extend(
         outputs
             .iter()
@@ -72,22 +75,9 @@ where
     );
 
     run_builder::<S>(&drv).await?;
-    if drv.builtin().is_some() {
-        return Ok(HashMap::new());
-    }
-
-    // check that every output path was produced
-    for (out, eq_class) in &outputs {
-        let tmp_path = S::store_path(eq_class);
-        let tmp_path = Path::new(&tmp_path);
-        if !tmp_path.exists() {
-            bail!("builder failed to produce output {out}");
-        }
-    }
 
     // check that output was valid
-    // TODO: we are computin hash two times, how can we solve that?
-    valid_fixed_output_drv::<S>(&drv, &outputs).await?;
+    valid_output::<S>(&drv, &outputs).await?;
 
     let mut refs = inputs
         .iter()
@@ -111,7 +101,8 @@ where
             .collect();
 
         let name = eq_class.name_part().to_string();
-        let self_hash = Some(self_hash);
+        // TODO: should we allow fixed_output derivations to have a self_hash???
+        let self_hash = drv.fixed_hash.is_none().then_some(self_hash);
         let output = store
             .add_to_store(
                 &tmp_path,
@@ -160,21 +151,35 @@ where
     resolve(store, inputs).await
 }
 
-async fn valid_fixed_output_drv<S>(
-    drv: &StoreDrv,
-    outputs: &HashMap<String, StorePath>,
-) -> Result<()>
+async fn valid_output<S>(drv: &StoreDrv, outputs: &HashMap<String, StorePath>) -> Result<()>
 where
     S: Store,
 {
     if let Some(ref fixed_hash) = drv.fixed_hash {
-        let eq_class = outputs.get(DEFAULT_OUT).unwrap();
-        let tmp_path = S::store_path(eq_class);
-        let path = Path::new(&tmp_path);
-        let hash =
-            hash_mod_rewrites(path, fixed_hash.algo(), &HashMap::new(), Some(eq_class)).await?;
+        let out_path = outputs.get(DEFAULT_OUT).unwrap();
+        let out_path = S::store_path(out_path);
+        let path = Path::new(&out_path);
+        // since fixed output derivations at the moment are only fetchers
+        // we assume that there is no self_hash or rewrites
+        // TODO: we are computing the hash two times (the other time is in add_to_store)
+        let hash = hash_mod_rewrites(path, fixed_hash.algo(), &HashMap::new(), None).await?;
         if &hash != fixed_hash {
-            bail!("hash mismatch\nexpected {fixed_hash} got {hash}");
+            bail!(
+                r"hash mismatch:
+expected: 
+  {fixed_hash} 
+got:
+  {hash}"
+            );
+        }
+    } else {
+        // check that every output path was produced
+        for (out, eq_class) in outputs {
+            let tmp_path = S::store_path(eq_class);
+            let tmp_path = Path::new(&tmp_path);
+            if !tmp_path.exists() {
+                bail!("builder failed to produce output {out}");
+            }
         }
     }
     Ok(())

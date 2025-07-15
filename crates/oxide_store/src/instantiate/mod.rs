@@ -31,9 +31,16 @@ pub const BUILDER_KEY: &str = "builder";
 
 pub fn is_valid_drv(drv: &Drv) -> Result<()> {
     if drv.name.ends_with(DRV_EXT) {
-        bail!("derivation names cannot end with {}", DRV_EXT)
+        bail!(
+            "invalid name {}: derivation names cannot end with {}",
+            drv.name,
+            DRV_EXT
+        )
     } else if !is_valid_name(&drv.name) {
-        bail!("derivation name can only contain alfanumeric chars and '.', '-', '_'")
+        bail!(
+            "invalid name {}: derivation name can only contain alfanumeric chars and '.', '-', '_'",
+            drv.name,
+        )
     } else if drv.fixed_hash.is_some() && drv.outputs != [DEFAULT_OUT] {
         bail!(
             "fixed-output derivations must contain a single output called {}",
@@ -290,7 +297,11 @@ where
             let Some(eq_class) = d.eq_classes.get(&out) else {
                 bail!("invalid output: {} not present", out);
             };
-            let outp = S::store_path(eq_class);
+            let outp = if let Some(suff) = drv_path.suff {
+                format!("{}{}", S::store_path(eq_class), suff)
+            } else {
+                S::store_path(eq_class)
+            };
             BindRes {
                 drvs: BTreeMap::from([(p, BTreeSet::from([out]))]),
                 res: vec![outp],

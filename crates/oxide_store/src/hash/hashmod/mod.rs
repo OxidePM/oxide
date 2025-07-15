@@ -1,7 +1,7 @@
 use crate::hash::utils::ChunkReader;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use oxide_core::hash::{Hash, HashAlgo};
-use oxide_core::store::{HashPart, StorePath, HASH_PART_LEN};
+use oxide_core::store::{HASH_PART_LEN, HashPart, StorePath};
 use sha2::{Digest, Sha256, Sha512};
 use std::fs::Metadata;
 use std::io::SeekFrom;
@@ -90,10 +90,10 @@ where
     })
 }
 
-pub(crate) const DIR_TYPE: u64 = 40_000;
-pub(crate) const FILE_TYPE: u64 = 100_644;
-pub(crate) const EXEC_TYPE: u64 = 100_755;
-pub(crate) const SYMLINK_TYPE: u64 = 120_000;
+pub(crate) const DIR_TYPE: u64 = 0o040_000;
+pub(crate) const FILE_TYPE: u64 = 0o100_644;
+pub(crate) const EXEC_TYPE: u64 = 0o100_755;
+pub(crate) const SYMLINK_TYPE: u64 = 0o120_000;
 
 #[inline]
 fn file_type(metadata: &Metadata) -> u64 {
@@ -187,7 +187,12 @@ where
     H: Digest,
     P: AsRef<Path>,
 {
-    let reader = OpenOptions::new().read(true).write(true).open(path).await?;
+    // this is usually the case in fixed-output derivations which have write perm disabled
+    let reader = if rewrites.is_empty() && self_hash.is_none() {
+        OpenOptions::new().read(true).open(path).await?
+    } else {
+        OpenOptions::new().read(true).write(true).open(path).await?
+    };
     let mut writer = reader.try_clone().await?;
 
     let mut hasher = H::new();

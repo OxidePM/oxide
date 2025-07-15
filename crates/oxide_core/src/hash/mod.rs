@@ -31,6 +31,10 @@ pub enum Hash {
 }
 
 impl Hash {
+    pub fn placeholder() -> Hash {
+        Hash::Sha512(Box::new([0; 64]))
+    }
+
     pub fn algo(&self) -> HashAlgo {
         match self {
             Hash::Sha256(_) => HashAlgo::Sha256,

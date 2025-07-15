@@ -35,9 +35,9 @@ pub fn to_base_name(mut s: String) -> String {
     s
 }
 
-pub const DIR_PERMISSION: u32 = 555;
-pub const FILE_PERMISSION: u32 = 444;
-pub const EXEC_FILE_PERMISSION: u32 = 555;
+pub const DIR_PERMISSION: u32 = 0o555;
+pub const FILE_PERMISSION: u32 = 0o444;
+pub const EXEC_FILE_PERMISSION: u32 = 0o555;
 
 #[inline]
 pub fn file_type_to_permission(metadata: &Metadata) -> u32 {
@@ -45,10 +45,10 @@ pub fn file_type_to_permission(metadata: &Metadata) -> u32 {
         DIR_PERMISSION
     } else if metadata.is_file() {
         use std::os::unix::fs::PermissionsExt;
-        if metadata.permissions().mode() & 0o111 != 0 {
-            EXEC_FILE_PERMISSION
-        } else {
+        if metadata.permissions().mode() & 0o111 == 0 {
             FILE_PERMISSION
+        } else {
+            EXEC_FILE_PERMISSION
         }
     } else if metadata.is_symlink() {
         unimplemented!()

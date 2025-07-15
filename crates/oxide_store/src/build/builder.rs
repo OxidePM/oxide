@@ -1,12 +1,17 @@
 use crate::{
     api::Store,
-    builtins::{fetch_url, Ctx},
-    os::sandbox::prepare_sandbox,
+    builtins::{Ctx, fetch_url},
+    os::{sandbox::prepare_sandbox, utils::errno},
     utils::tempfile::tempdir_in,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
+use log::warn;
 use oxide_core::drv::StoreDrv;
-use std::{collections::HashMap, ffi::CString, ptr};
+use std::{
+    collections::HashMap,
+    ffi::{CStr, CString},
+    ptr,
+};
 
 pub const SANDBOX_BUILD_DIR: &str = "/build";
 
@@ -100,12 +105,12 @@ fn exec_builder(builder: &str, args: Vec<String>, envs: Vec<String>) -> Result<(
     // and the pointers will point to dirty memory
     let (_args, args) = strings_to_charptr(args)?;
     let (_envs, envs) = strings_to_charptr(envs)?;
-    let builder = CString::new(builder)?;
-    let builder = builder.as_ptr().cast::<libc::c_char>();
+    let prog = CString::new(builder)?;
+    let prog = prog.as_ptr().cast::<libc::c_char>();
     unsafe {
-        let code = libc::execve(builder, args.as_ptr(), envs.as_ptr());
+        let code = libc::execve(prog, args.as_ptr(), envs.as_ptr());
         if code == -1 {
-            libc::exit(1);
+            libc::exit(errno());
         }
     }
     Ok(())
@@ -121,6 +126,12 @@ unsafe fn run_process(drv: &StoreDrv, envs: &HashMap<String, String>) -> Result<
         let mut status = 0 as libc::c_int;
         unsafe {
             libc::waitpid(pid, &mut status, 0);
+            let exit_status = libc::WEXITSTATUS(status);
+            if exit_status != 0 {
+                let exit_str = libc::strerror(exit_status);
+                let exit_string = CStr::from_ptr(exit_str);
+                warn!("builder {}: {}", drv.builder, exit_string.to_string_lossy());
+            }
         }
         Ok(())
     }

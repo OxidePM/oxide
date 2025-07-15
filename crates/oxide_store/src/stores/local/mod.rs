@@ -1,18 +1,18 @@
 mod queries;
 
-use crate::api::{Opt, Store, CONFIG};
+use crate::api::{CONFIG, Opt, Store};
 use crate::hash::utils::make_path;
 use crate::hash::{hash_mod_rewrites, rewrite_self_hash, rewrite_store_path};
 use crate::os::lock::{LockMode, PathLock};
 use crate::types::{Realisation, StoreObj};
 use crate::utils::{add_lock_ext, is_valid_name};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use log::info;
 use oxide_core::store::StorePath;
 use oxide_core::types::{EqClass, Out};
 use oxide_core::utils::file_type_to_permission;
-use sqlx::migrate::Migrator;
 use sqlx::SqlitePool;
+use sqlx::migrate::Migrator;
 use std::cell::LazyCell;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
@@ -150,20 +150,31 @@ impl LocalStore {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
-        // delete dst if already exists
+        let src = src.as_ref();
+        let dst = dst.as_ref();
         let metadata = fs::metadata(&src).await?;
         let mode = file_type_to_permission(&metadata);
-        if dst.as_ref().is_dir() {
-            fs::remove_dir_all(&dst).await?;
-        } else if dst.as_ref().is_file() || dst.as_ref().is_symlink() {
-            fs::remove_file(&dst).await?;
-        }
-        // if the path is in the store and it is temporary move it
-        // otherwise copy it
-        if Self::is_store_path(&src) {
-            fs::rename(&src, &dst).await?;
-        } else {
-            fs::copy(&src, &dst).await?;
+        // if it is a fixed-output derivation src and dst are equal
+        if src != dst {
+            // delete dst if already exists
+            if dst.exists() {
+                // set write permissions to delete file
+                // TODO: acquire lock before delete
+                let mode = metadata.permissions().mode() | 0o200;
+                fs::set_permissions(&dst, Permissions::from_mode(mode)).await?;
+                if dst.is_dir() {
+                    fs::remove_dir_all(&dst).await?;
+                } else if dst.is_file() || dst.is_symlink() {
+                    fs::remove_file(&dst).await?;
+                }
+            }
+            // if the path is in the store and it is temporary move it
+            // otherwise copy it
+            if Self::is_store_path(src) {
+                fs::rename(&src, &dst).await?;
+            } else {
+                fs::copy(&src, &dst).await?;
+            }
         }
         fs::set_permissions(&dst, Permissions::from_mode(mode)).await?;
         Ok(())
